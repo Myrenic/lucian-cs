@@ -31,7 +31,7 @@ export function SiteHeader() {
   const links = site.nav.filter((item) => item !== contact)
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md">
       <div className={pageShell}>
         <div className="flex h-16 items-center gap-1">
           <Link

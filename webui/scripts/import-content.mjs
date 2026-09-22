@@ -726,7 +726,9 @@ function chrome(html) {
         lines: cellLines(find("p", col)),
       }))
       .filter((column) => !OMITTED_COLUMNS.has(column.title)),
-    copyright: collapse(textOf(find(".footer2 .copyright", doc))).trim(),
+    // The original credited the studio that built the WordPress theme
+    // ("www.1stbuddha.com"). That is not this site's credit to carry, so the
+    // footer prints its own and nothing is imported here.
     social: findAll(".footer2 .social-list a", doc).map((a) => ({
       name: classStarting(find("span", a), "socicon-").replace("socicon-", "") || collapse(textOf(a)).trim(),
       href: attr(a, "href"),

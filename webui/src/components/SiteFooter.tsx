@@ -35,7 +35,7 @@ export function SiteFooter() {
         <Separator className="bg-white/12" />
 
         <div className="flex flex-col-reverse items-start justify-between gap-6 py-7 sm:flex-row sm:items-center">
-          <p className="m-0 text-[0.875rem] text-ink-muted">{site.copyright}</p>
+          <p className="m-0 text-[0.875rem] text-ink-muted">By Mike T.</p>
           <ul className="m-0 flex list-none gap-2 p-0">
             {site.social.map((social) => (
               <li key={social.name}>

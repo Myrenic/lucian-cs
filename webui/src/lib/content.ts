@@ -63,7 +63,6 @@ export type Site = {
   heroHeading: string
   nav: { label: string; href: string }[]
   columns: FooterColumn[]
-  copyright: string
   social: Social[]
   contact: {
     name: string
