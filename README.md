@@ -30,7 +30,7 @@ webui/                     Vite + React 19 + TypeScript + Tailwind 4 source
   src/index.css                the design tokens, one file
   public/media/, src/assets/   photographs and fonts (committed)
 base/                      the Flux kustomize base: ConfigMaps + nginx + Deployment
-docs/reference/            screenshots of the original and the rebuild
+docs/reference/            screenshots of the original and the rework
 ```
 
 There is no database, no CMS and no server-side rendering: the build is a
