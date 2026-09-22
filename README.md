@@ -126,8 +126,14 @@ looks like: green build, unstyled site.
 `kubernetes/apps/services/lucian-cs/` in the [nebula](https://github.com/Myrenic/nebula)
 repository holds the Flux `GitRepository` and `Kustomization` for this repo, and
 `kubernetes/apps/network/exposure/lucian.yaml` holds the Traefik route. Push to
-`main` here (the image is in the bundle), then the cluster converges within a
-minute.
+`main` here, then `flux reconcile kustomization lucian-cs -n flux-system`.
+
+Flux applies in seconds; the **pod** sees the new files a little later, because
+the kubelet re-syncs mounted ConfigMaps on its own schedule (up to a minute or
+so). Checking the site immediately after a reconcile shows the previous build -
+which looks exactly like a failed deploy. Compare the script hash in the served
+`index.html` against `base/www/index.*.js` before concluding anything, or run
+`kubectl exec -n services deploy/lucian-cs -- cat /usr/share/nginx/html/index.html`.
 
 ## Unlisted preview
 
@@ -169,6 +175,19 @@ Each of these is a decision, not an accident, and each is reversible:
   maroon family, so it still reads as the brand, and it gives every page an end.
 * **Headings have a scale.** See [Design system](#design-system).
 
+**Editorial calls made in the import**
+
+* **The footer's "Trending" column is gone.** A short list of external news
+  links the client stopped updating; the import leaves it out by name, with the
+  reason next to the code, rather than the footer hiding it at render time.
+* **The footer credit is not the original's.** WordPress credited the studio
+  that built the theme; the footer prints its own credit instead, and nothing is
+  imported for it.
+* **Quotation marks belong to the component.** The imported quotes arrived
+  wrapped in their own `"`, so the site was printing them twice. The import
+  strips them and `Testimonials` sets them typographically; the text guard treats
+  quote marks as presentational and compares everything else exactly.
+
 **Still open, needs a decision before go-live**
 
 * **No contact form backend.** The original posted to Contact Form 7. A static
@@ -181,10 +200,48 @@ Each of these is a decision, not an accident, and each is reversible:
 * **Two lines of new UI copy**: the hero's buttons ("Neem contact op",
   "Bekijk diensten"). Every other word on the site is imported. The hero's lead
   sentence is the homepage's own meta description, not new text.
+* **Structured data restored.** The WordPress site carried Rank Math's
+  `AccountingService` markup and the rewrite initially dropped it. It is back,
+  built from the import - name, address, phone, e-mail and the three profiles in
+  the footer - but it lacks opening hours, prices and a review score because
+  nobody has told us what they are, and it points at `luciancs.nl`, so it only
+  starts working when the site moves there. See
+  [What competitors do](#what-competitors-do) for why those gaps matter.
 
 Carried over unchanged from the original: the maroon, the photograph, Rubik, the
 warm grey bands, the 1140px-ish grid, and the icon glyphs lifted out of the
 theme's own fonts as SVG paths.
+
+## What competitors do
+
+A scan of 17 Dutch competitors (eight in Groningen/Oldambt, plus the national
+online players) and 13 professional-services sites for patterns. What is worth
+knowing:
+
+* **Nobody in this market embeds a booking calendar or a WhatsApp button.** The
+  Dutch pattern is one promise - "gratis en vrijblijvend kennismakingsgesprek" -
+  behind a contact form plus a click-to-call number. The site already does that,
+  and the mobile menu carries the number and the e-mail for exactly this reason.
+* **Prices are the split.** Regional kantoren publish nothing and say so in prose
+  ("we werken niet met één vast tarief"). The ones that publish win the comparison
+  queries: a one-person kantoor in Winschoten advertises from EUR 800 a year, a
+  tax office sells particulier subscriptions at EUR 18-25 a month, and the online
+  players publish a full ladder. This is the biggest single gap on this site.
+* **Trust is a formula**: years in business + one keurmerk + a third-party review
+  score, named. The site has testimonials but no platform score and no
+  registration numbers; two one-person competitors publish exactly those.
+* **Particulier work is barely served.** No competitor homepage in the scan
+  advertises schuldhulpverlening, budgetbeheer or toeslagen. This site does - it
+  is the clearest differentiator it has.
+* **September fiscal content is table stakes** among maintained kantoor sites
+  (Prinsjesdag / Belastingplan posts dated within days of the speech). This site's
+  kenniscentrum is thin and undated.
+* **Local pages are owned by directories as much as by kantoren.** The site has
+  more city pages than most regional peers, but is absent from the free
+  directories that rank on the same queries.
+
+The full research, with per-site evidence and URLs, is not committed here; the
+ranked recommendations it produced are listed in the project conversation.
 
 ## Verification
 
