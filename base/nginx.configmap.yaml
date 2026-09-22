@@ -1,5 +1,9 @@
-# nginx for the static build: SPA fallback, cache policy and the headers this
-# preview is served with.
+# nginx for the built site: cache policy, the headers this preview is served
+# with, and 404s that are actually 404s.
+#
+# The site is prerendered, so every route is a real file on disk and an unknown
+# path must say so. That is also why there is no SPA fallback here: falling back
+# to index.html would answer every typo with the homepage and a 200.
 #
 # This host is an unlisted preview of a site that will eventually live on the
 # client's own domain, so it is kept out of search engines two ways: the
@@ -20,7 +24,7 @@ data:
     map $uri $cache_control {
         default                                   "no-cache";
         ~^/index\.[A-Za-z0-9_-]+\.(js|css|woff2)$ "public, max-age=31536000, immutable";
-        ~\.(png|webp|avif|svg)$                   "public, max-age=604800";
+        ~\.(png|jpg|webp|avif|svg)$               "public, max-age=604800";
     }
 
     server {
@@ -42,19 +46,23 @@ data:
         add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" always;
 
         gzip on;
+        gzip_comp_level 5;
         gzip_min_length 1024;
-        gzip_types text/css application/javascript text/plain application/json image/svg+xml;
+        gzip_vary on;
+        gzip_types text/css application/javascript text/plain application/json application/xml image/svg+xml;
 
+        # The production domain will want this line; the preview must not point
+        # crawlers at anything.
+        # location = /robots.txt { return 200 "User-agent: *\nAllow: /\nSitemap: https://www.luciancs.nl/sitemap.xml\n"; }
         location = /robots.txt {
             return 200 "User-agent: *\nDisallow: /\n";
         }
 
-        # Photographs live in their own ConfigMap, mounted at /media. There is
-        # nothing to configure for it beyond the cache rule in the map above.
+        # 404.html is a prerendered page like any other; serving it through
+        # error_page keeps the status code honest.
+        error_page 404 /404.html;
 
-        # Every route is served by the same document, including the paths the
-        # original site published (/boekhouder-winschoten.html and friends).
         location / {
-            try_files $uri $uri/ /index.html;
+            try_files $uri $uri/ =404;
         }
     }

@@ -1,31 +1,33 @@
-// Packs the vite output in ../base/www into the ConfigMaps that Flux applies.
+// Packs the built site into the ConfigMaps that Flux applies.
 //
-//     node scripts/build-configmap.mjs            # from webui/
+//     node scripts/build-configmap.mjs            # from webui/, after prerender
 //
-// The cluster has no image registry, so the built site is committed as a
-// ConfigMap and mounted into a stock nginx pod (same contract as
-// mushroom-finder and mytops).
+// The cluster has no image registry, so the built site is committed as
+// ConfigMaps and unpacked into an emptyDir by an initContainer before nginx
+// serves it (base/deployment.yaml).
 //
-// Two objects, not one: a ConfigMap may not exceed 1 MiB, the JavaScript bundle
-// already sits near it, and the photographs are the part that grows.
-// `public/media/*` becomes its own ConfigMap, mounted next to the site at
-// /media - which is also where index.html and the components already point.
+// Three objects, because a ConfigMap may not exceed 1 MiB and one bundle of
+// prerendered HTML plus JavaScript does:
 //
-// JavaScript and CSS go into `binaryData` even though they are text, because
-// base64 is the only representation that survives the whole pipeline byte for
-// byte. This bundle carries C1 control characters (U+0085 and friends) from a
-// minified dependency, and a YAML round trip rewrites those - `kubectl kustomize`
-// turns U+0085 into a space when it renders the ConfigMap, so the same content
-// in `data` would reach the pod subtly corrupted. base64 costs a third more and
-// removes the question. index.html stays plain `data` so it is easy to inspect.
+//   lucian-pages   the 42 prerendered pages and the sitemap
+//   lucian-webui   hashed JavaScript, CSS, fonts, favicons
+//   lucian-media   the photographs
+//
+// Two transformations make that fit, and both are undone by the initContainer:
+//
+//   * text is gzipped       - HTML and JavaScript are mostly repetition, and
+//                             base64 costs a third on top of whatever is stored
+//   * "/" becomes "__"      - ConfigMap keys may not contain a slash, and the
+//                             routes are nested (/info/acties.html)
 import { readdir, readFile, writeFile } from "node:fs/promises"
+import { gzipSync } from "node:zlib"
 import { dirname, join, relative, resolve } from "node:path"
 
 const base = resolve(import.meta.dirname, "../../base")
 const www = join(base, "www")
-const MEDIA = "media"
 
-const TEXT = /\.(html|map|txt|json|svg)$/
+/** Compressible text: gzipped before storing, so nginx serves the bytes as-is. */
+const GZIP = /\.(html|js|css|xml|json|txt|svg|map)$/
 const OBJECT_LIMIT = 1024 * 1024
 
 async function walk(dir) {
@@ -38,54 +40,56 @@ async function walk(dir) {
   return out
 }
 
-const files = []
-for (const file of await walk(www)) {
+const files = await walk(www).then((all) => all.sort())
+if (!files.length) throw new Error("base/www is empty - run the build first")
+
+/** Which ConfigMap a file belongs to, by what it is for. */
+function groupOf(path) {
+  if (path.startsWith("media/")) return "media"
+  if (path.endsWith(".html") || path === "sitemap.xml") return "pages"
+  return "webui"
+}
+
+const groups = { pages: {}, webui: {}, media: {} }
+
+for (const file of files) {
   const path = relative(www, file).split("\\").join("/")
   const content = await readFile(file)
-  if (TEXT.test(path)) {
-    const text = content.toString("utf8")
-    // A control character would mean the file is not UTF-8 text after all; the
-    // cluster would reject it in `data`, so find out here.
-    if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text)) {
-      throw new Error(`${path} is not plain text - add its extension to the binary list`)
-    }
+  const group = groupOf(path)
+  // The photographs are mounted straight into /media, so their keys carry no
+  // directory; everything else is unpacked and keeps its path in the key.
+  const key = (group === "media" ? path.slice("media/".length) : path).split("/").join("__")
+  if (key.includes("/")) throw new Error(`unpackable key: ${key}`)
+
+  if (GZIP.test(path)) {
+    groups[group][`${key}.gz`] = gzipSync(content, { level: 9 }).toString("base64")
+  } else {
+    groups[group][key] = content.toString("base64")
   }
-  files.push({ path, content })
 }
 
-/** ConfigMap keys may not contain a slash, so the two trees have to be flat. */
-function pack(name, selected) {
-  if (!selected.length) throw new Error(`${name} would be empty`)
-  const data = {}
-  const binaryData = {}
-  for (const { path, content } of selected) {
-    const key = path.startsWith(`${MEDIA}/`) ? path.slice(MEDIA.length + 1) : path
-    if (key.includes("/")) throw new Error(`${name}: "${key}" is nested; ConfigMap keys are flat`)
-    if (TEXT.test(path)) data[key] = content.toString("utf8")
-    else binaryData[key] = content.toString("base64")
-  }
-  return {
+const NAMES = { pages: "lucian-pages", webui: "lucian-webui", media: "lucian-media" }
+
+for (const [group, binaryData] of Object.entries(groups)) {
+  const keys = Object.keys(binaryData)
+  if (!keys.length) throw new Error(`${group} would be empty`)
+
+  const object = {
     apiVersion: "v1",
     kind: "ConfigMap",
-    metadata: { name },
-    ...(Object.keys(data).length ? { data } : {}),
-    ...(Object.keys(binaryData).length ? { binaryData } : {}),
+    metadata: { name: NAMES[group] },
+    binaryData,
   }
-}
-
-async function write(name, selected, out) {
-  const object = pack(name, selected)
   const json = JSON.stringify(object, null, 2) + "\n"
-  await writeFile(out, json)
+  await writeFile(join(base, `${group}.configmap.json`), json)
 
   const bytes = Buffer.byteLength(json)
   const kib = Math.round(bytes / 1024)
-  const counts = `${Object.keys(object.data ?? {}).length} text, ${Object.keys(object.binaryData ?? {}).length} binary`
-  console.log(`wrote ${out} (${selected.length} files: ${counts}, ${kib} KiB)`)
+  console.log(`wrote ${group}.configmap.json (${keys.length} files, ${kib} KiB)`)
   if (bytes > OBJECT_LIMIT) {
     throw new Error(
-      `${name} is ${kib} KiB, over the cluster's 1 MiB object limit - ` +
-        `split the largest asset group into its own ConfigMap`,
+      `${NAMES[group]} is ${kib} KiB, over the cluster's 1 MiB object limit - ` +
+        `move part of it into its own ConfigMap`,
     )
   }
 }
@@ -95,23 +99,18 @@ async function write(name, selected, out) {
 // and still runs - it just renders unstyled, which is exactly the kind of
 // failure nobody notices until it is deployed. One sentinel per design area:
 const SENTINELS = [
-  // the site's own bands and type
   "bg-ink", // dark header/footer/testimonial bands
   "text-muted-foreground", // running text
   "max-w-page", // the page shell
   "max-w-measure", // article measure
-  // one per generated directory, so a missing @source glob fails the build
-  // instead of shipping a half-styled site
   "bg-card",
   "bg-primary",
 ]
 
-const app = files.filter(({ path }) => !path.startsWith(`${MEDIA}/`))
-const media = files.filter(({ path }) => path.startsWith(`${MEDIA}/`))
-
-const stylesheet = app.find(({ path }) => path.endsWith(".css"))
+const stylesheet = files.find((file) => file.endsWith(".css"))
 if (!stylesheet) throw new Error("no stylesheet in the build output")
-const missing = SENTINELS.filter((selector) => !stylesheet.content.includes(selector))
+const css = await readFile(stylesheet, "utf8")
+const missing = SENTINELS.filter((selector) => !css.includes(selector))
 if (missing.length) {
   throw new Error(
     `the stylesheet is missing ${missing.join(", ")} - ` +
@@ -119,5 +118,9 @@ if (missing.length) {
   )
 }
 
-await write("lucian-webui", app, join(base, "webui.configmap.json"))
-await write("lucian-media", media, join(base, "media.configmap.json"))
+const pages = await readdir(www, { recursive: true })
+console.log(
+  `packed ${pages.filter((f) => f.endsWith(".html")).length} pages, ` +
+    `${pages.filter((f) => f.endsWith(".js")).length} script(s), ` +
+    `${pages.filter((f) => f.endsWith(".css")).length} stylesheet(s)`,
+)

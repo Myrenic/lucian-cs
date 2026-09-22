@@ -6,10 +6,11 @@
   "description": "LUCIAN (luciancs.nl) rebuilt as a shadcn/ui site - Vite, React and Tailwind",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/build-configmap.mjs",
+    "build": "tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --emptyOutDir && node scripts/prerender.mjs && node scripts/build-configmap.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "import": "node scripts/import-content.mjs"
+    "import": "node scripts/import-content.mjs",
+    "ssr": "vite build --ssr src/entry-server.tsx --emptyOutDir"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

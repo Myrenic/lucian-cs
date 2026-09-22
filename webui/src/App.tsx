@@ -6,21 +6,20 @@ import { PageHeader } from "@/components/PageHeader"
 import { Sections } from "@/components/Section"
 import { SiteFooter } from "@/components/SiteFooter"
 import { SiteHeader } from "@/components/SiteHeader"
-import { crumbsFor, homePage, pages, pathByWpId, structuredData, type Page } from "@/lib/content"
+import { crumbsFor, homePage, notFoundPage, pages, pagesByPath, pathByWpId, type Page } from "@/lib/content"
+import { PageMeta } from "@/components/PageMeta"
 import { pageShell } from "@/lib/layout"
 import { cn } from "@/lib/utils"
 
 export default function App() {
+  const { pathname } = useLocation()
+  const metaPage = pagesByPath[pathname] ?? notFoundPage
+
   return (
     <>
+      <PageMeta page={metaPage} />
       <ScrollToTop />
       <SiteHeader />
-      {/* In the body on purpose: search engines read JSON-LD anywhere in the
-          document, and this keeps one source of truth for the address. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
       <main>
         <Routes>
           {pages.map((page) => (
@@ -46,26 +45,12 @@ function ScrollToTop() {
 }
 
 function PageView({ page }: { page: Page }) {
-  useDocumentMeta(page.title, page.description)
   return (
     <>
       {page.path === "/" ? <Hero /> : <PageHeader page={page} />}
       <Sections sections={page.sections} />
     </>
   )
-}
-
-function useDocumentMeta(title: string, description: string) {
-  useEffect(() => {
-    document.title = title
-    let tag = document.querySelector<HTMLMetaElement>('meta[name="description"]')
-    if (!tag) {
-      tag = document.createElement("meta")
-      tag.name = "description"
-      document.head.append(tag)
-    }
-    tag.content = description
-  }, [title, description])
 }
 
 function Shortlink() {
@@ -75,7 +60,6 @@ function Shortlink() {
 }
 
 function NotFound() {
-  useDocumentMeta("Pagina niet gevonden - LUCIAN", "Deze pagina bestaat niet (meer).")
   const crumbs = crumbsFor("/")
   return (
     <section className="bg-background py-20 sm:py-28">

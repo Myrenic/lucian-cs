@@ -30,6 +30,10 @@ import { textContent } from "domutils"
 import { parseDocument } from "htmlparser2"
 
 const ORIGIN = "https://www.luciancs.nl"
+
+/** The domain the site will live on, once it leaves the preview host. Kept here
+ *  because canonicals, Open Graph URLs and the sitemap all need one source. */
+const CANONICAL_ORIGIN = "https://www.luciancs.nl"
 const root = resolve(import.meta.dirname, "..")
 const contentDir = join(root, "src/content")
 
@@ -83,29 +87,37 @@ async function download(url, relativePath) {
  * ConfigMap that has a 1 MiB ceiling, so the weight matters; ffmpeg is the one
  * external tool the import needs.
  */
-async function downloadResized(url, relativePath, { width, quality }) {
+/**
+ * Runs a downloaded image through ffmpeg before storing it.
+ *
+ * The originals are print-sized (2000px wide) and these files are committed and
+ * packed into a ConfigMap with a size ceiling, so they are re-encoded on the way
+ * in. ffmpeg is the one external tool the import needs.
+ */
+async function downloadImage(url, relativePath, filter, encode) {
   const source = await getBinary(url)
   const target = join(root, relativePath)
   await mkdir(dirname(target), { recursive: true })
-  const out = join(tmpdir(), basename(relativePath))
+  const input = join(tmpdir(), `lucian-import-${basename(relativePath)}`)
+  const output = join(tmpdir(), `lucian-import-out-${basename(relativePath)}`)
+  await writeFile(input, source)
   try {
-    execFileSync(
-      "ffmpeg",
-      ["-y", "-loglevel", "error", "-i", "pipe:0", "-vf", `scale=${width}:-2`, "-c:v", "libwebp",
-       "-quality", String(quality), "-compression_level", "6", out],
-      { input: source, stdio: ["pipe", "inherit", "inherit"] },
-    )
+    execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", input, "-vf", filter, ...encode, output], {
+      stdio: ["ignore", "inherit", "inherit"],
+    })
   } catch (error) {
     throw new Error(`re-encoding ${relativePath} needs ffmpeg on PATH: ${error.message}`)
   }
-  const buf = await readFile(out)
+  const buf = await readFile(output)
   await writeFile(target, buf)
-  await rm(out, { force: true })
+  await rm(input, { force: true })
+  await rm(output, { force: true })
   if (buf.byteLength >= source.byteLength) {
     throw new Error(`${relativePath}: re-encode produced ${buf.byteLength} bytes, larger than the original`)
   }
   return { name: relativePath, bytes: buf.byteLength }
 }
+
 
 // -------------------------------------------------------------- HTML helpers
 //
@@ -764,7 +776,7 @@ const live = await pool(wpPages, 5, async (page) => {
   }
 })
 
-const site = chrome(live.find((page) => page.path === "/").html)
+const site = { ...chrome(live.find((page) => page.path === "/").html), canonicalOrigin: CANONICAL_ORIGIN }
 
 const pages = wpPages.map((page, i) => ({
   id: page.id,
@@ -826,10 +838,18 @@ const theme = `${ORIGIN}/wp-content/themes/luciancs/assets`
 const uploads = `${ORIGIN}/wp-content/uploads`
 const assets = await Promise.all([
   download(`${theme}/images/denker.avif`, "public/media/denker.avif"),
-  downloadResized(`${theme}/images/city-3295173-1280-1280x853.webp`, "public/media/city.webp", {
-    width: 1024,
-    quality: 58,
-  }),
+  downloadImage(
+    `${theme}/images/denker.avif`,
+    "public/media/og.jpg",
+    "crop=iw:iw*1050/2000:0:ih*0.08,scale=1200:630",
+    ["-q:v", "4", "-f", "mjpeg"],
+  ),
+  downloadImage(
+    `${theme}/images/city-3295173-1280-1280x853.webp`,
+    "public/media/city.webp",
+    "scale=1024:-2",
+    ["-c:v", "libwebp", "-quality", "58", "-compression_level", "6"],
+  ),
   download(`${uploads}/2025/05/cropped-logo2-32x32.png`, "public/favicon-32.png"),
   download(`${uploads}/2025/05/cropped-logo2-180x180.png`, "public/apple-touch-icon.png"),
   download(`${theme}/fonts/iJWKBXyIfDnIV7nBrXw.woff2`, "src/assets/rubik-latin.woff2"),

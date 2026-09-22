@@ -1,4 +1,5 @@
 node_modules/
+.ssr/
 .DS_Store
 
 # The vite build output is committed on purpose: the cluster has no registry and

@@ -60,6 +60,8 @@ export type Social = { name: SocialName; href: string }
 
 export type Site = {
   brand: string
+  /** Where the site will live; canonicals and the sitemap are built from it. */
+  canonicalOrigin: string
   heroHeading: string
   nav: { label: string; href: string }[]
   columns: FooterColumn[]
@@ -113,34 +115,13 @@ export const pathByWpId: Record<string, string> = Object.fromEntries(
   pages.map((page) => [String(page.id), page.path]),
 )
 
-/**
- * Structured data for search engines.
- *
- * The WordPress site carried Rank Math's AccountingService markup, and the
- * rebuild dropped it; this restores the parts we can state without inventing
- * anything - name, address, phone, e-mail and the profiles already in the
- * footer. Opening hours and prices are left out because nobody has told us
- * what they are.
- *
- * The URL is the domain the site will live on. The preview is noindex, so this
- * only starts working when it moves there.
- */
-export const structuredData = {
-  "@context": "https://schema.org",
-  "@type": "AccountingService",
-  name: site.brand,
-  url: "https://www.luciancs.nl/",
-  email: site.contact.email,
-  telephone: `+31${site.contact.phoneHref.replace(/^tel:0?/, "")}`,
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: site.contact.street,
-    postalCode: site.contact.postalCode,
-    addressLocality: site.contact.city,
-    addressCountry: "NL",
-  },
-  areaServed: { "@type": "City", name: site.contact.city },
-  sameAs: site.social.map((profile) => profile.href),
+/** The page a 404 renders as; it exists so the route has real metadata. */
+export const notFoundPage: Page = {
+  id: 0,
+  path: "/404.html",
+  title: "Pagina niet gevonden - LUCIAN",
+  description: "Deze pagina bestaat niet of is verplaatst.",
+  sections: [],
 }
 
 export const homePage = pagesByPath["/"]

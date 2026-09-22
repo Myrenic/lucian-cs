@@ -23,18 +23,24 @@ the live theme with `getComputedStyle`; that is what the numbers in
 webui/                     Vite + React 19 + TypeScript + Tailwind 4 source
   components.json              shadcn config (aliases, base library, icon set)
   scripts/import-content.mjs   the one-way import from luciancs.nl
-  scripts/build-configmap.mjs  packs the build into the two ConfigMaps
+  scripts/prerender.mjs        renders every route to static HTML
+  scripts/build-configmap.mjs  packs the build into three ConfigMaps
   src/content/*.json           imported pages and site chrome (committed)
   src/components/*.tsx         the site: bands, prose, cards, quotes, form
   src/components/ui/*.tsx      shadcn components (generated, then yours)
+  src/entry-client.tsx         hydrates the prerendered markup
+  src/entry-server.tsx         renders one route to a document, for prerender
+  src/lib/seo.ts               canonicals, Open Graph, structured data, FAQ
   src/index.css                the design tokens, one file
   public/media/, src/assets/   photographs and fonts (committed)
 base/                      the Flux kustomize base: ConfigMaps + nginx + Deployment
 docs/reference/            screenshots of the original and the rework
 ```
 
-There is no database, no CMS and no server-side rendering: the build is a
-static bundle served by stock nginx, mounted from two ConfigMaps.
+There is no database and no CMS. The build prerenders all 41 routes to real
+HTML files, which are served by stock nginx from ConfigMaps - so a crawler that
+never runs JavaScript still gets the finished page, and the browser hydrates it
+instead of rendering from scratch.
 
 ## Design system
 
@@ -94,28 +100,48 @@ elements out of their `<ul>`), which turned lists into loose paragraphs.
 ```
 cd webui
 npm ci
-npm run build          # typecheck, vite build, pack the ConfigMaps
+npm run build
 ```
+
+Four steps, in order:
+
+1. `tsc --noEmit` - typecheck.
+2. `vite build` - the client bundle into `base/www`, with content-hashed names.
+3. `vite build --ssr` - the same app as a Node module, used once and thrown away.
+4. `scripts/prerender.mjs` - imports that module and renders all 41 routes plus a
+   `404.html`, reading the hashed asset tags out of the client build so every
+   page carries the same script and stylesheet. Then it writes `sitemap.xml`.
+
+`npm run ssr` rebuilds just the server bundle when iterating on rendering.
+
+The pages are rendered as complete documents, which is what puts each route's
+title, description, canonical, Open Graph tags and structured data in the HTML
+rather than in an effect. React 19 hoists them while rendering; the same
+components keep them correct when the visitor navigates client-side.
 
 The build output is committed and applied: the cluster has no image registry, so
 the site ships as ConfigMaps mounted into a stock `nginx:alpine` pod (the same
 contract as `mushroom-finder` and `mytops`).
 
-Two objects, because one may not exceed 1 MiB and the JavaScript bundle alone is
-already close to it: `base/webui.configmap.json` (bundle, fonts, favicons) at
-~900 KiB and `base/media.configmap.json` (the two photographs) at ~150 KiB.
-`scripts/build-configmap.mjs` fails the build before either crosses the limit,
-so the ceiling shows up as a red build rather than as a Kustomization that will
-not apply. When it does, in order of how little they cost: pre-compress the
-assets and serve them with nginx's `gzip_static` (the bundle is 565 KiB raw,
-140 KiB gzipped - a three-fold saving), move another asset group into its own
-ConfigMap, or build an image in CI and push it to `ghcr.io`, which the cluster
-already pulls from.
+Three objects, because a ConfigMap may not exceed 1 MiB and prerendered HTML plus
+JavaScript does: `pages` (42 pages + sitemap, ~320 KiB), `webui` (hashed bundle,
+CSS, fonts, ~315 KiB) and `media` (photographs, ~220 KiB). The builder fails the
+build before any of them crosses the limit, so the ceiling shows up as a red
+build rather than as a Kustomization that will not apply.
 
-The bundle goes into `binaryData` even though it is text. It carries C1 control
-characters from a minified dependency, and a YAML round trip rewrites those -
-`kubectl kustomize` turns U+0085 into a space when it renders the ConfigMap - so
-the same content as plain `data` would reach the pod subtly corrupted.
+Two transformations make them fit, and an initContainer undoes both before nginx
+starts (see `base/deployment.yaml`):
+
+* **everything compressible is gzipped** - HTML is mostly repetition, and base64
+  costs a third on top of whatever is stored;
+* **`/` is stored as `__`** - a ConfigMap key may not contain a slash, and the
+  routes are nested (`/info/acties.html`).
+
+All of it goes into `binaryData` rather than `data`, even the text. The bundle
+carries C1 control characters from a minified dependency, and a YAML round trip
+rewrites those - `kubectl kustomize` turns U+0085 into a space when it renders
+the ConfigMap - so the same content as plain `data` would reach the pod subtly
+corrupted. base64 removes the question.
 
 `npm run build` also fails if the stylesheet comes out without the utilities the
 layout depends on, which is what a stale `@source` list in `src/index.css`
@@ -243,6 +269,39 @@ knowing:
 The full research, with per-site evidence and URLs, is not committed here; the
 ranked recommendations it produced are listed in the project conversation.
 
+## Search
+
+What is in place, in the order it matters:
+
+* **Every route is a real HTML file** with its own title, description, canonical,
+  Open Graph and Twitter tags, and its content already rendered (`npm run build`
+  writes 42 of them). A crawler that does not run JavaScript sees the whole page;
+  before this, it saw the homepage.
+* **Structured data** as one `@graph` per page: `AccountingService` (address,
+  phone, e-mail, area served, the three profiles), `WebPage`, `BreadcrumbList`,
+  `FAQPage` on the pages whose content really is a Q&A list, and an
+  `OfferCatalog` of the four service lines on the homepage.
+* **Canonicals and the sitemap point at `luciancs.nl`**, the domain the site will
+  live on, from a single constant in the import - so they are already right on
+  the day it moves.
+* **Unknown paths return 404.** The prerendered site has no SPA fallback: a typo
+  used to answer 200 with the homepage, which is a soft 404.
+* **Nothing is loaded from a third party.** No analytics, no tag manager, no font
+  CDN, no review widget: one origin, five requests, and a CSP that says so.
+* **Font and hero image are preloaded**, the stylesheet is 10.5 KiB gzipped and
+  the bundle is 165 KiB gzipped for the whole 41-page site.
+* **`<html lang="nl">`**, one `h1` per page, `header`/`nav`/`main`/`footer`,
+  `figure`/`blockquote`/`figcaption` for the quotes, decorative images `alt=""`.
+
+Still open, all of it content rather than code:
+
+* the preview's `noindex` header and `robots.txt`, and the `Sitemap:` line that
+  belongs in robots.txt once the domain is live (both in `base/nginx.configmap.yaml`);
+* prices, opening hours, KvK and BTW numbers - competitors publish them and the
+  structured data is ready for them;
+* a Google Business Profile, so there is a review score like every competitor's;
+* a dated page when the Belastingplan is published each September.
+
 ## Verification
 
 The rework is a redesign, so heights no longer track the original. What must
@@ -261,3 +320,18 @@ Page heights, before and after the rework, at 1440×1000:
 
 `docs/reference/` holds both: `original-*.png` from luciancs.nl and
 `rework-*.png` from the deployed preview, at desktop and mobile widths.
+
+Page speed, first load of the homepage, cold:
+
+| | SPA (before) | Prerendered |
+|---|---|---|
+| HTML | 1 KiB, no page text | 41 KiB, whole page in the markup |
+| Paint requires JavaScript | yes | no |
+| Requests | 1 document + bundle + CSS + 2 fonts | same, but the first paint has content |
+| Bundle | 552 KiB raw / 165 KiB gzipped | unchanged |
+| Stylesheet | 61 KiB raw / 10.5 KiB gzipped | unchanged |
+
+`npm run build` also writes `base/www`, which is the unpacked tree: serve it with
+something that does not fake an SPA fallback (`python3 -m http.server 4174
+--directory ../base/www`) to check routes and 404s locally. `vite preview` will
+not do: it answers every path with index.html.
