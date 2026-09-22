@@ -1,0 +1,32 @@
+{
+  "name": "lucian-webui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "LUCIAN (luciancs.nl) - static site rebuilt from the WordPress original as Vite + React components",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/build-configmap.mjs",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "import": "node scripts/import-content.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.9.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6",
+    "css-select": "^7.0.0",
+    "domutils": "^4.0.2",
+    "htmlparser2": "^12.0.0",
+    "tailwindcss": "^4",
+    "typescript": "~6",
+    "vite": "^8"
+  }
+}

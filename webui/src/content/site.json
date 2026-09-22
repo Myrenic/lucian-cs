@@ -1,0 +1,225 @@
+{
+  "source": "https://www.luciancs.nl",
+  "sourceUpdated": "2026-09-18T15:16:43",
+  "brand": "LUCIAN",
+  "heroHeading": "Helder in cijfers, nuchter als ontzorger",
+  "nav": [
+    {
+      "label": "Over",
+      "href": "/over.html"
+    },
+    {
+      "label": "Administratiekantoor",
+      "href": "/administratiekantoor.html"
+    },
+    {
+      "label": "Belastingadviseur",
+      "href": "/belastingadviseur.html"
+    },
+    {
+      "label": "Financiële hulp",
+      "href": "/financiele-hulp.html"
+    },
+    {
+      "label": "Ondersteuning",
+      "href": "/ondersteuning.html"
+    },
+    {
+      "label": "Contact",
+      "href": "/contact.html"
+    }
+  ],
+  "columns": [
+    {
+      "title": "Adres",
+      "lines": [
+        [
+          {
+            "t": "text",
+            "v": "Andries Luchies"
+          }
+        ],
+        [
+          {
+            "t": "text",
+            "v": "Brederolaan 19"
+          }
+        ],
+        [
+          {
+            "t": "text",
+            "v": "9673 GM"
+          }
+        ],
+        [
+          {
+            "t": "text",
+            "v": "Winschoten"
+          }
+        ]
+      ]
+    },
+    {
+      "title": "Contact",
+      "lines": [
+        [
+          {
+            "t": "text",
+            "v": "Email:"
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "mailto:info@luciancs.nl",
+            "c": [
+              {
+                "t": "text",
+                "v": "info@luciancs.nl"
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "text",
+            "v": "Mobiel:"
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "tel:0655684505",
+            "c": [
+              {
+                "t": "text",
+                "v": "06-55684505"
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "title": "Info",
+      "lines": [
+        [
+          {
+            "t": "link",
+            "href": "/info/acties.html",
+            "c": [
+              {
+                "t": "text",
+                "v": "Acties"
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "/info/kenniscentrum.html",
+            "c": [
+              {
+                "t": "text",
+                "v": "Kenniscentrum"
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "/wp-content/uploads/2026/08/AV.pdf",
+            "c": [
+              {
+                "t": "text",
+                "v": "AV"
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "/info/disclaimer.html",
+            "c": [
+              {
+                "t": "text",
+                "v": "Disclaimer"
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "title": "Trending",
+      "lines": [
+        [
+          {
+            "t": "link",
+            "href": "https://tinyurl.com/2jrwtbnx",
+            "c": [
+              {
+                "t": "text",
+                "v": "#Steeds meer ouderen blijven werken"
+              }
+            ],
+            "external": true
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "https://tinyurl.com/4fph92tb",
+            "c": [
+              {
+                "t": "text",
+                "v": "#Terugkeer 'normale' energiecontracten ..."
+              }
+            ],
+            "external": true
+          }
+        ],
+        [
+          {
+            "t": "link",
+            "href": "https://tinyurl.com/3d8ufjbp",
+            "c": [
+              {
+                "t": "text",
+                "v": "#Superrijken; laat ons meer belasting betalen!"
+              }
+            ],
+            "external": true
+          }
+        ]
+      ]
+    }
+  ],
+  "copyright": "© www.1stbuddha.com",
+  "social": [
+    {
+      "name": "facebook",
+      "href": "https://www.facebook.com/lucianwinschoten"
+    },
+    {
+      "name": "linkedin",
+      "href": "https://nl.linkedin.com/in/andriesluchies"
+    },
+    {
+      "name": "twitter",
+      "href": "https://twitter.com/andriesluchies"
+    }
+  ],
+  "contact": {
+    "name": "Andries Luchies",
+    "street": "Brederolaan 19",
+    "postalCode": "9673 GM",
+    "city": "Winschoten",
+    "email": "info@luciancs.nl",
+    "phone": "06-55684505",
+    "phoneHref": "tel:0655684505"
+  }
+}

@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/* Tailwind's own file detection found nothing in this repository, and `**` does
+   not recurse in this version (it matched zero directory levels), so every
+   directory holding class names is listed. Globs are relative to this file.
+   Adding a directory means adding a glob here - `npm run build` fails when the
+   stylesheet comes out without the utilities the layout depends on. */
+@source "{*.tsx,components/*.tsx}";
+
+/* Rubik, the original theme's text face. Only the two latin subsets the site
+   actually renders are kept (the source theme also ships cyrillic, hebrew and
+   cyrillic-ext files). The file is a variable font, so one file per subset
+   covers every weight. */
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("./assets/rubik-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF,
+    U+FFFD;
+}
+
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("./assets/rubik-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Every value below was read off the live WordPress theme with
+   getComputedStyle, not eyeballed, so the rebuild starts from the real design
+   tokens. Names describe the role, the comment records the source value. */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-rubik: "Rubik", sans-serif;
+
+  --color-ink: #232323; /* body copy */
+  --color-muted: #767676; /* display-7: nearly all running text */
+  --color-maroon: #800000; /* headings, rules, accents */
+  --color-maroon-deep: #500000; /* primary button, testimonial overlay */
+  --color-band: #efefef; /* navbar, service band, footer */
+  --color-band-alt: #eeeeee; /* menu wrapper, testimonial section base */
+  --color-field: #f5f5f5; /* form inputs */
+  --color-field-border: #e8e8e8;
+  --color-field-text: #565656;
+  --color-hairline: rgb(0 0 0 / 0.1); /* bootstrap default rule */
+
+  --spacing-nav: 77px; /* fixed navbar height, body offset */
+
+  /* Bootstrap 4 grid, as the theme used it. */
+  --container-content: 1140px;
+  --container-text: 740px; /* .col-md-8 inside a 1110px row */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-ink);
+  background-color: #fff;
+  padding-top: var(--spacing-nav); /* clears the fixed navbar, as the original did */
+}
+
+/* The hero is fixed to the viewport on wide screens, as in the source theme. */
+@media only screen and (min-width: 992px) {
+  .hero-bg {
+    background-position: 0 -170px;
+  }
+}
+
+/* Testimonial band: the photo stays put while the cards scroll over it. */
+@media only screen and (min-width: 992px) {
+  .testimonial-bg {
+    background-attachment: fixed;
+  }
+}

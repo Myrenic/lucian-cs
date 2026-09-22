@@ -1,0 +1,57 @@
+# nginx for the static build: SPA fallback, cache policy and the headers this
+# preview is served with.
+#
+# This host is an unlisted preview of a site that will eventually live on the
+# client's own domain, so it is kept out of search engines two ways: the
+# X-Robots-Tag header and a robots.txt that disallows everything. Both have to
+# be removed when the site moves to the client's domain.
+#
+# Every add_header sits at server level. nginx replaces the inherited header set
+# as soon as a location declares one of its own, so the cache policy is applied
+# through a map instead of inside a location - otherwise the security and
+# noindex headers would silently disappear for cached assets.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lucian-nginx
+  namespace: services
+data:
+  default.conf: |
+    map $uri $cache_control {
+        default                                   "no-cache";
+        ~^/index\.[A-Za-z0-9_-]+\.(js|css|woff2)$ "public, max-age=31536000, immutable";
+        ~\.(png|webp|avif|svg)$                   "public, max-age=604800";
+    }
+
+    server {
+        listen 80 default_server;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+        charset utf-8;
+
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "geolocation=(), camera=(), microphone=()" always;
+        add_header Cache-Control $cache_control always;
+        # The site loads nothing from outside its own origin: no CDN, no tag
+        # manager, no third-party fonts. form-action stays 'self' because the
+        # contact form composes a mailto: rather than posting anywhere.
+        add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" always;
+
+        gzip on;
+        gzip_min_length 1024;
+        gzip_types text/css application/javascript text/plain application/json image/svg+xml;
+
+        location = /robots.txt {
+            return 200 "User-agent: *\nDisallow: /\n";
+        }
+
+        # Every route is served by the same document, including the paths the
+        # original site published (/boekhouder-winschoten.html and friends).
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }

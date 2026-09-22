@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+
+# The vite build output is committed on purpose: the cluster has no registry and
+# applies base/webui.configmap.json directly. base/www is only an intermediate -
+# it is the input to the ConfigMap builder, never what the cluster reads.
+base/www/

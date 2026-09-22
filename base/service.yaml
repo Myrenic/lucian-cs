@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lucian-cs
+  namespace: services
+  labels:
+    app: lucian-cs
+    app.kubernetes.io/name: lucian-cs
+spec:
+  selector:
+    app: lucian-cs
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
