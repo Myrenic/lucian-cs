@@ -16,12 +16,16 @@
 // Two transformations make that fit, and both are undone by the initContainer:
 //
 //   * text is gzipped       - HTML and JavaScript are mostly repetition, and
-//                             base64 costs a third on top of whatever is stored
+//                             base64 costs a third on top of whatever is stored.
+//                             fflate, not node:zlib, because zlib's output
+//                             changes between Node builds; mtime 0 because the
+//                             gzip header otherwise carries the current time.
+//                             CI compares the committed ConfigMaps byte for byte
 //   * "/" becomes "__"      - ConfigMap keys may not contain a slash, and the
 //                             routes are nested (/info/acties.html)
 import { readdir, readFile, writeFile } from "node:fs/promises"
-import { gzipSync } from "node:zlib"
 import { dirname, join, relative, resolve } from "node:path"
+import { gzipSync } from "fflate"
 
 const base = resolve(import.meta.dirname, "../../base")
 const www = join(base, "www")
@@ -62,7 +66,7 @@ for (const file of files) {
   if (key.includes("/")) throw new Error(`unpackable key: ${key}`)
 
   if (GZIP.test(path)) {
-    groups[group][`${key}.gz`] = gzipSync(content, { level: 9 }).toString("base64")
+    groups[group][`${key}.gz`] = Buffer.from(gzipSync(content, { level: 9, mtime: 0 })).toString("base64")
   } else {
     groups[group][key] = content.toString("base64")
   }

@@ -61,5 +61,6 @@ export async function render(
     }, 15_000)
   })
 
-  return `<!doctype html>${html}`
+  // React emits the doctype itself when it renders the whole document.
+  return html
 }
