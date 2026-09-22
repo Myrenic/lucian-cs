@@ -127,13 +127,43 @@ export function shortTitle(title: string): string {
   return short || title
 }
 
+/**
+ * Several pages title themselves "Name: a longer promise"; the name is enough.
+ * One heading is "Kenniscentrum > Administratie", and a ">" inside a crumb
+ * reads as a breadcrumb separator, so it is spelled out.
+ */
+const namePart = (text: string) =>
+  text.split(/[:|]/)[0].replace(/\s*>\s*/g, " \u00b7 ").trim() || text
+
+function ownHeading(page: Page): string | undefined {
+  for (const section of page.sections) {
+    if (section.t !== "prose") continue
+    for (const block of section.blocks) {
+      if (block.t === "heading" && block.level === 1) {
+        const text = block.c.map((node) => ("v" in node ? node.v : "")).join("").trim()
+        if (text) return text
+      }
+    }
+  }
+  return undefined
+}
+
+/**
+ * Breadcrumb labels, in the order the site itself would say them: the menu's own
+ * word if the page is in the menu, otherwise the page's heading, otherwise the
+ * cleaned SEO title. Nothing is truncated - two of these run to 57 characters
+ * and mangling a name to fit a rail is worse than letting it wrap.
+ */
 export function labelFor(path: string): string {
   const fromNav = navLabelByPath[path]
   if (fromNav) return fromNav
   const page = pagesByPath[path]
-  if (page) return shortTitle(page.title)
-  const last = path.split("/").filter(Boolean).at(-1) ?? ""
-  return last.replace(/\.html$/, "").replace(/-/g, " ")
+  if (!page) {
+    const last = path.split("/").filter(Boolean).at(-1) ?? ""
+    return last.replace(/\.html$/, "").replace(/-/g, " ")
+  }
+  const heading = ownHeading(page)
+  return namePart(heading ?? shortTitle(page.title))
 }
 
 export type Crumb = { label: string; href: string }
