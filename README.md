@@ -321,15 +321,20 @@ Page heights, before and after the rework, at 1440×1000:
 `docs/reference/` holds both: `original-*.png` from luciancs.nl and
 `rework-*.png` from the deployed preview, at desktop and mobile widths.
 
-Page speed, first load of the homepage, cold:
+Page speed, homepage, measured on the deployed site:
 
 | | SPA (before) | Prerendered |
 |---|---|---|
-| HTML | 1 KiB, no page text | 41 KiB, whole page in the markup |
-| Paint requires JavaScript | yes | no |
-| Requests | 1 document + bundle + CSS + 2 fonts | same, but the first paint has content |
-| Bundle | 552 KiB raw / 165 KiB gzipped | unchanged |
-| Stylesheet | 61 KiB raw / 10.5 KiB gzipped | unchanged |
+| HTML | 0.8 KiB, no page text | 41 KiB raw, **9.2 KiB gzipped**, whole page in the markup |
+| First paint needs JavaScript | yes | no - text paints with the HTML and CSS |
+| JavaScript | 552 KiB raw / 172 KiB gzipped | unchanged |
+| Stylesheet | 61 KiB raw / 11 KiB gzipped | unchanged |
+| Requests, first load | 5 | 5 (one origin, nothing third-party) |
+| Unknown path | 200 with the homepage | **404** |
+
+All 41 sitemap URLs return 200, the 404 returns 404, and the build is
+byte-reproducible - `npm run build` twice produces an identical ConfigMap, which
+is what the CI check compares.
 
 `npm run build` also writes `base/www`, which is the unpacked tree: serve it with
 something that does not fake an SPA fallback (`python3 -m http.server 4174
