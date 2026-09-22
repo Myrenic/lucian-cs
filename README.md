@@ -115,12 +115,14 @@ and the icon glyphs lifted out of the theme's own fonts as SVG paths.
 
 Page heights of the rebuild against the live site, at 1440×1000:
 
-| Page | Original | Rebuild |
-|---|---|---|
-| `/` | 2873 | 2857 |
-| `/boekhouder-winschoten.html` | 3300 | 3419 |
-| `/contact.html` | 1706 | 1687 |
-| `/info/acties.html` | 2280 | 2290 |
-| `/over.html` | 2157 | 2172 |
+| Page | Original | Rebuild | Lists (items) |
+|---|---|---|---|
+| `/` | 2873 | 2857 | 0 / 4 cards |
+| `/boekhouder-winschoten.html` | 3300 | 3283 | 3 (11) / 3 (11) |
+| `/administratiekantoor.html` | 3892 | 3881 | 1 (3) / 1 (3) |
+| `/contact.html` | 1706 | 1687 | form 930px in both |
+| `/info/acties.html` | 2280 | 2290 | — |
+| `/over.html` | 2157 | 2172 | — |
 
-Screenshots of both, at desktop and mobile widths, are in `docs/reference/`.
+Screenshots of both, at desktop and mobile widths, are in `docs/reference/`;
+the rebuild ones are captured from the deployed preview, not from a local run.
