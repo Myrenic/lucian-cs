@@ -108,11 +108,11 @@ for (const [group, binaryData] of Object.entries(groups)) {
 const digest = createHash("sha256").update(written.join("")).digest("hex").slice(0, 32)
 const deploymentPath = join(base, "deployment.yaml")
 const deployment = await readFile(deploymentPath, "utf8")
-const stamped = deployment.replace(/checksum\/config: "[^"]*"/, `checksum/config: "${digest}"`)
-if (stamped === deployment) {
+if (!/checksum\/config: "[^"]*"/.test(deployment)) {
   throw new Error("deployment.yaml has no checksum/config annotation to update")
 }
-await writeFile(deploymentPath, stamped)
+// Rewriting it to the same value is the normal case: nothing changed.
+await writeFile(deploymentPath, deployment.replace(/checksum\/config: "[^"]*"/, `checksum/config: "${digest}"`))
 
 // Tailwind only emits utilities for class names it finds in the files listed by
 // `@source` in src/index.css. When that list goes stale the site still builds
