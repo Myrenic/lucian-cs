@@ -137,6 +137,11 @@ starts (see `base/deployment.yaml`):
 * **`/` is stored as `__`** - a ConfigMap key may not contain a slash, and the
   routes are nested (`/info/acties.html`).
 
+Because the initContainer only runs when a pod starts, the build also stamps a
+checksum of the three ConfigMaps into the Deployment's pod template: without it
+Flux would apply new ConfigMaps that nothing ever reads, and the site would keep
+serving the previous release until some unrelated restart.
+
 All of it goes into `binaryData` rather than `data`, even the text. The bundle
 carries C1 control characters from a minified dependency, and a YAML round trip
 rewrites those - `kubectl kustomize` turns U+0085 into a space when it renders
