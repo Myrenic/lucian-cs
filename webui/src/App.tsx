@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader"
 import { Sections } from "@/components/Section"
 import { SiteFooter } from "@/components/SiteFooter"
 import { SiteHeader } from "@/components/SiteHeader"
-import { crumbsFor, homePage, pages, pathByWpId, type Page } from "@/lib/content"
+import { crumbsFor, homePage, pages, pathByWpId, structuredData, type Page } from "@/lib/content"
 import { pageShell } from "@/lib/layout"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +15,12 @@ export default function App() {
     <>
       <ScrollToTop />
       <SiteHeader />
+      {/* In the body on purpose: search engines read JSON-LD anywhere in the
+          document, and this keeps one source of truth for the address. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <main>
         <Routes>
           {pages.map((page) => (
