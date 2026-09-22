@@ -5,6 +5,11 @@
 # ConfigMap key may not contain a slash and the routes are nested: the builder
 # stores "/info/acties.html" as "info__acties.html.gz", and the initContainer
 # turns that back into a path, gunzipping as it goes.
+#
+# The photographs are copied into the same tree rather than mounted at
+# /usr/share/nginx/html/media: a volume nested inside another volume fails here,
+# because runc has to create the mount point on the read-only image filesystem
+# before the parent mount is in place.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -52,6 +57,8 @@ spec:
                   esac
                 done
               done
+              mkdir -p media
+              cp /media/* media/
               echo "unpacked $(find . -type f | wc -l) files"
           volumeMounts:
             - name: pages
@@ -59,6 +66,9 @@ spec:
               readOnly: true
             - name: assets
               mountPath: /assets
+              readOnly: true
+            - name: media
+              mountPath: /media
               readOnly: true
             - name: html
               mountPath: /html
@@ -86,11 +96,6 @@ spec:
           volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
-              readOnly: true
-            # The photographs stay a mount of their own: they never need
-            # unpacking, and this keeps them out of the way of it.
-            - name: media
-              mountPath: /usr/share/nginx/html/media
               readOnly: true
             - name: nginx-conf
               mountPath: /etc/nginx/conf.d
