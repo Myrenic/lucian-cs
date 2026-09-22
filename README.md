@@ -202,5 +202,5 @@ Page heights, before and after the rework, at 1440×1000:
 | `/boekhouder-winschoten.html` | 3300 | 3283 | 3484 |
 | `/contact.html` | 1706 | 1687 | 1509 |
 
-Screenshots of both, at desktop and mobile widths, are in `docs/reference/`;
-the rebuild ones are captured from the deployed preview, not from a local run.
+`docs/reference/` holds both: `original-*.png` from luciancs.nl and
+`rework-*.png` from the deployed preview, at desktop and mobile widths.
