@@ -42,6 +42,9 @@ spec:
             - name: webui
               mountPath: /usr/share/nginx/html
               readOnly: true
+            - name: media
+              mountPath: /usr/share/nginx/html/media
+              readOnly: true
             - name: nginx-conf
               mountPath: /etc/nginx/conf.d
               readOnly: true
@@ -74,6 +77,9 @@ spec:
         - name: webui
           configMap:
             name: lucian-webui
+        - name: media
+          configMap:
+            name: lucian-media
         - name: nginx-conf
           configMap:
             name: lucian-nginx

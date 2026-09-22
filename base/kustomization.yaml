@@ -2,7 +2,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  # Two ConfigMaps because one object may not exceed 1 MiB: the site bundle and
+  # the photographs, mounted side by side at / and /media.
   - ./webui.configmap.json
+  - ./media.configmap.json
   - ./nginx.configmap.yaml
   - ./deployment.yaml
   - ./service.yaml

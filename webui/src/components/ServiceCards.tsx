@@ -1,41 +1,62 @@
+import { ArrowUpRight } from "lucide-react"
+import { Link } from "react-router-dom"
 import { Icon } from "@/components/icons"
 import { Inlines } from "@/components/Inline"
-import { Link } from "react-router-dom"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { pageShell } from "@/lib/layout"
 import type { ServiceCard } from "@/lib/content"
 
 /**
- * The four service panels on the homepage (`counters1` in the original).
+ * The four service panels from the homepage.
  *
- * The original laid four `col-lg-4` cards out in one non-wrapping flex row,
- * which overflowed the viewport by 80px at 1440 wide. Here they wrap: 1 column
- * on phones, 2 on tablets, 4 on desktop, which is what the markup intended.
+ * The original laid four `col-lg-4` cards in a non-wrapping flex row that
+ * overflowed the viewport by 80px at 1440 wide. Here they are a real grid: one
+ * column on phones, two on tablets, four on desktop. Each card is one link, so
+ * the whole panel is a target rather than the title alone.
  */
 export function ServiceCards({ cards }: { cards: ServiceCard[] }) {
   return (
-    <div className="mx-auto grid max-w-content grid-cols-1 gap-y-10 px-4 md:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => (
-        <Link
-          key={card.href}
-          to={card.href}
-          className="flex flex-col items-center p-4 text-center font-rubik no-underline"
-        >
-          <div className="flex h-[98px] items-center justify-center pb-4">
-            <Icon name={card.icon} className="h-20 w-20 text-maroon-deep" />
-          </div>
-          <h2 className="mb-2 text-[1.2rem] leading-none font-bold text-muted">{card.title}</h2>
-          <p className="mb-4 leading-6 text-muted">
-            <Inlines nodes={card.lead} />
-          </p>
-          <hr className="mx-auto my-4 w-full border-0 border-t border-hairline" />
-          <ul className="text-muted">
-            {card.items.map((item) => (
-              <li key={item} className="mb-2 leading-none">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </Link>
-      ))}
+    <div className={pageShell}>
+      <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+        {cards.map((card) => (
+          <li key={card.href} className="flex">
+            <Link
+              to={card.href}
+              className="group/card flex w-full rounded-xl transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none"
+            >
+              <Card className="h-full w-full gap-5 bg-card shadow-[var(--shadow-card)] ring-1 ring-foreground/10 transition-all duration-200 group-hover/card:ring-primary/30 group-hover/card:shadow-[var(--shadow-lift)] group-focus-visible/card:ring-primary">
+                <CardHeader className="gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex size-11 items-center justify-center rounded-lg bg-primary/8 text-primary ring-1 ring-primary/12">
+                      <Icon name={card.icon} className="size-6" />
+                    </span>
+                    <ArrowUpRight
+                      className="mt-0.5 size-4 text-muted-foreground/70 transition-all duration-200 group-hover/card:translate-x-0.5 group-hover/card:-translate-y-0.5 group-hover/card:text-primary"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <h3 className="font-heading text-[1.0625rem] leading-snug font-semibold text-foreground">
+                    {card.title}
+                  </h3>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-4 text-muted-foreground">
+                  <p className="leading-relaxed">
+                    <Inlines nodes={card.lead} />
+                  </p>
+                  <ul className="mt-auto space-y-1.5 border-t border-border pt-3 text-[0.9375rem]">
+                    {card.items.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span aria-hidden="true" className="mt-2 size-1 shrink-0 rounded-full bg-primary/45" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

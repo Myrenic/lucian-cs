@@ -49,6 +49,9 @@ data:
             return 200 "User-agent: *\nDisallow: /\n";
         }
 
+        # Photographs live in their own ConfigMap, mounted at /media. There is
+        # nothing to configure for it beyond the cache rule in the map above.
+
         # Every route is served by the same document, including the paths the
         # original site published (/boekhouder-winschoten.html and friends).
         location / {

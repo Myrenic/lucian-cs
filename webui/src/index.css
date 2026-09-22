@@ -1,16 +1,23 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* shadcn components carry `dark:` classes. This site has no dark mode, so the
+   variant is scoped to a `.dark` ancestor that is never rendered: without this
+   line those utilities would follow the visitor's OS preference and punch holes
+   in a light-only design. */
+@custom-variant dark (&:is(.dark *));
 
 /* Tailwind's own file detection found nothing in this repository, and `**` does
    not recurse in this version (it matched zero directory levels), so every
-   directory holding class names is listed. Globs are relative to this file.
-   Adding a directory means adding a glob here - `npm run build` fails when the
-   stylesheet comes out without the utilities the layout depends on. */
-@source "{*.tsx,components/*.tsx}";
+   directory holding class names is listed. Adding a directory means adding a
+   glob here - `npm run build` fails when the stylesheet comes out without the
+   utilities the layout depends on. */
+@source "{*.tsx,components/*.tsx,components/ui/*.tsx}";
 
-/* Rubik, the original theme's text face. Only the two latin subsets the site
-   actually renders are kept (the source theme also ships cyrillic, hebrew and
-   cyrillic-ext files). The file is a variable font, so one file per subset
-   covers every weight. */
+/* Rubik, the original theme's text face, kept because it is the brand's voice.
+   Only the two latin subsets the site renders; the file is a variable font, so
+   one file per subset covers every weight. */
 @font-face {
   font-family: "Rubik";
   font-style: normal;
@@ -32,56 +39,133 @@
     U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* Every value below was read off the live WordPress theme with
-   getComputedStyle, not eyeballed, so the rebuild starts from the real design
-   tokens. Names describe the role, the comment records the source value. */
-@theme {
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  --font-rubik: "Rubik", sans-serif;
+/* shadcn's token names, mapped to Tailwind utilities. */
+@theme inline {
+  --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Rubik", ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #232323; /* body copy */
-  --color-muted: #767676; /* display-7: nearly all running text */
-  --color-maroon: #800000; /* headings, rules, accents */
-  --color-maroon-deep: #500000; /* primary button, testimonial overlay */
-  --color-band: #efefef; /* navbar, service band, footer */
-  --color-band-alt: #eeeeee; /* menu wrapper, testimonial section base */
-  --color-field: #f5f5f5; /* form inputs */
-  --color-field-border: #e8e8e8;
-  --color-field-text: #565656;
-  --color-hairline: rgb(0 0 0 / 0.1); /* bootstrap default rule */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-  --spacing-nav: 77px; /* fixed navbar height, body offset */
+  /* Two roles shadcn's set has no name for: the dark band that closes every
+     page, and the tints the service cards use. */
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-ink-muted: var(--ink-muted);
+  --color-surface: var(--surface);
 
-  /* Bootstrap 4 grid, as the theme used it. */
-  --container-content: 1140px;
-  --container-text: 740px; /* .col-md-8 inside a 1110px row */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  /* The original grid was Bootstrap's 1140/740; both are kept, slightly wider,
+     because the same text measures better at 1200/720 with the new type scale. */
+  --container-page: 1200px;
+  --container-measure: 720px;
+
+  --shadow-card: 0 1px 2px oklch(0.23 0.01 28 / 4%), 0 8px 24px -12px oklch(0.23 0.01 28 / 12%);
+  --shadow-lift: 0 2px 4px oklch(0.23 0.01 28 / 5%), 0 18px 36px -18px oklch(0.23 0.01 28 / 22%);
 }
 
-html {
-  scroll-behavior: smooth;
+:root {
+  /* Brand maroon, taken from the original theme (#800000 / #500000) and warmed
+     by a few degrees so it reads as oxblood rather than pure red. */
+  --primary: oklch(0.3767 0.1546 29.23);
+  --primary-foreground: oklch(0.9913 0.0029 84.56);
+
+  /* The original greys (#fff / #efefef / #232323 / #767676) with a touch of
+     warmth, so bands and hairlines sit next to the maroon instead of fighting
+     it. The old #767676 running text was the weakest part of the old design:
+     #6b625f keeps the same quiet tone at a readable contrast. */
+  --background: oklch(0.9913 0.0029 84.56);
+  --foreground: oklch(0.2301 0.0113 27.55);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2301 0.0113 27.55);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2301 0.0113 27.55);
+  --secondary: oklch(0.9596 0.0051 67.76);
+  --secondary-foreground: oklch(0.2301 0.0113 27.55);
+  --muted: oklch(0.9596 0.0051 67.76);
+  --muted-foreground: oklch(0.5036 0.0125 39.37);
+  --accent: oklch(0.9452 0.0074 67.76);
+  --accent-foreground: oklch(0.2301 0.0113 27.55);
+  --destructive: oklch(0.5173 0.1763 27.9);
+  --border: oklch(0.9131 0.0094 62.58);
+  --input: oklch(0.9131 0.0094 62.58);
+  --ring: oklch(0.3767 0.1546 29.23);
+
+  --ink: oklch(0.2273 0.0331 26.14);
+  --ink-foreground: oklch(0.9686 0.0051 67.76);
+  --ink-muted: oklch(0.7295 0.0176 40.51);
+  --surface: oklch(0.9762 0.0033 65.1);
+
+  --radius: 0.75rem;
 }
 
-body {
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--color-ink);
-  background-color: #fff;
-  padding-top: var(--spacing-nav); /* clears the fixed navbar, as the original did */
-}
-
-/* The hero is fixed to the viewport on wide screens, as in the source theme. */
-@media only screen and (min-width: 992px) {
-  .hero-bg {
-    background-position: 0 -170px;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
-}
 
-/* Testimonial band: the photo stays put while the cards scroll over it. */
-@media only screen and (min-width: 992px) {
-  .testimonial-bg {
-    background-attachment: fixed;
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Rubik sets 1 as the default for headings; the type scale below sets its own. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: oklch(0.3767 0.1546 29.23 / 18%);
+  }
+
+  /* A visible, brand-coloured focus ring everywhere, not just on the components
+     that happen to ship one. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

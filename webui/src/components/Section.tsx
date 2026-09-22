@@ -1,59 +1,63 @@
 import { Prose } from "@/components/Prose"
 import { ServiceCards } from "@/components/ServiceCards"
 import { Testimonials } from "@/components/Testimonials"
+import { bandPadding, pageShell } from "@/lib/layout"
+import { cn } from "@/lib/utils"
 import type { Section as SectionType } from "@/lib/content"
 
 /**
- * Section paddings and bands are the original's: 60px for an article, 30px for
- * the rule-and-heading banner, 90px for the grey service band.
+ * The four kinds of band the imported pages are built from, in the order the
+ * source put them: a statement, the services, the client quotes, the article.
  */
 export function Section({ section }: { section: SectionType }) {
   switch (section.t) {
     case "banner":
       return (
-        <section className="bg-white py-[30px]">
-          <div className="mx-auto max-w-content px-4 text-center font-rubik">
-            {/* The original rules are 3px boxes with a hairline on top, and the
-                heading carries 2rem of its own padding: together that is the
-                162px band the live site renders. */}
-            <hr className="mx-auto my-0 h-[3px] w-1/4 border-0 border-t border-hairline" />
-            <h2 className="mb-2 py-8 text-[1.5rem] leading-none font-medium text-muted">
-              {section.heading}
-            </h2>
-            <hr className="mx-auto my-0 h-[3px] w-1/4 border-0 border-t border-hairline" />
+        <section className="border-b border-border/70">
+          <div className={cn(pageShell, "py-12 sm:py-16")}>
+            {/* The original flanked this heading with two 25%-wide rules; the
+                hairlines keep that shape without pinning the text to 25%. */}
+            <div className="mx-auto flex max-w-4xl items-center gap-5 sm:gap-8">
+              <span className="hidden h-px flex-1 bg-border sm:block" aria-hidden="true" />
+              <h2 className="font-heading text-[clamp(1.375rem,2.6vw,1.875rem)] leading-[1.2] font-medium tracking-[-0.015em] text-foreground text-balance">
+                {section.heading}
+              </h2>
+              <span className="hidden h-px flex-1 bg-border sm:block" aria-hidden="true" />
+            </div>
           </div>
         </section>
       )
     case "services":
       return (
-        <section className="bg-band py-[90px]">
+        <section id="diensten" className={cn("bg-secondary", bandPadding)}>
           <ServiceCards cards={section.cards} />
         </section>
       )
     case "testimonials":
       return (
-        <section className="py-[60px]">
+        <section className={cn("bg-ink", bandPadding)}>
           <Testimonials items={section.items} />
         </section>
       )
     case "prose":
-      // `article` is the usual 60px-padded band with a 740px column; `bare` is
-      // WordPress' raw content area (contact.html), which has neither.
       return (
-        <section className={`bg-white ${section.variant === "article" ? "py-[60px]" : ""}`}>
-          <div
-            className={`mx-auto px-[15px] ${section.width === "wide" ? "max-w-[960px]" : "max-w-text"}`}
-          >
-            <Prose blocks={section.blocks} />
+        <section className={cn("bg-background", bandPadding)}>
+          <div className={pageShell}>
+            <article
+              className={cn(
+                "mx-auto w-full",
+                section.width === "wide" ? "max-w-[60rem]" : "max-w-measure",
+              )}
+            >
+              <Prose blocks={section.blocks} />
+            </article>
           </div>
         </section>
       )
-    default:
-      return null
   }
 }
 
-/** Renders a whole page body, i.e. everything between hero and footer. */
+/** Renders a whole page body, i.e. everything between the header band and the footer. */
 export function Sections({ sections }: { sections: SectionType[] }) {
   return (
     <>

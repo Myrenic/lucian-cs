@@ -1,106 +1,136 @@
 import { useState, type FormEvent } from "react"
+import { Button } from "@/components/ui/button"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { site } from "@/lib/content"
 
-// Field limits are the ones Contact Form 7 enforced on the original form.
-const FIELDS = [
-  { name: "Naam", type: "text", required: true, maxLength: 400 },
-  { name: "Email", type: "email", required: true, maxLength: 400 },
-  { name: "Mobiel", type: "tel", required: false, maxLength: 12 },
-  { name: "Onderwerp", type: "text", required: true, maxLength: 400 },
-] as const
+type FieldName = "Naam" | "Email" | "Mobiel" | "Onderwerp" | "Bericht"
+
+// Labels and limits are the ones the original Contact Form 7 form used.
+const FIELDS: {
+  name: Exclude<FieldName, "Bericht">
+  label: string
+  type: "text" | "email" | "tel"
+  required: boolean
+  maxLength: number
+}[] = [
+  { name: "Naam", label: "Naam", type: "text", required: true, maxLength: 400 },
+  { name: "Email", label: "Email", type: "email", required: true, maxLength: 400 },
+  { name: "Mobiel", label: "Mobiel", type: "tel", required: false, maxLength: 12 },
+  { name: "Onderwerp", label: "Onderwerp", type: "text", required: true, maxLength: 400 },
+]
 
 /**
  * The contact form.
  *
- * The original posted to WordPress' Contact Form 7 plugin, which does not
- * exist in a static build, so there is no endpoint to post to. Rather than
- * ship a form that silently loses messages, submitting composes the same
- * message as a mail to the office and hands it to the visitor's mail client.
+ * The original posted to WordPress' Contact Form 7, which does not exist in a
+ * static build, so there is no endpoint to post to. Rather than ship a form
+ * that silently loses messages, submitting composes the same message as a mail
+ * to the office and hands it to the visitor's mail client.
  *
- * Replace `openMailClient` with a real endpoint (Formspree, a small function,
- * the client's own mail service) before this goes live on their domain - the
- * success message below says the mail client opened, not that mail was sent.
+ * Replace `compose` with a real endpoint (a form service, a small function, the
+ * client's own mail setup) before this goes live on their domain. The
+ * confirmation below says the mail client opened, not that mail was sent.
  */
 export function ContactForm() {
-  const [sent, setSent] = useState(false)
-  const [error, setError] = useState("")
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({})
+  const [opened, setOpened] = useState(false)
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
-    const get = (key: string) => String(data.get(key) ?? "").trim()
+    const value = (name: FieldName) => String(data.get(name) ?? "").trim()
 
-    const message = get("Bericht")
-    if (message.length < 10) {
-      setError("Vul een bericht van minimaal 10 tekens in.")
+    const next: Partial<Record<FieldName, string>> = {}
+    if (!value("Naam")) next.Naam = "Vul uw naam in."
+    if (!value("Email")) next.Email = "Vul uw e-mailadres in."
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value("Email")))
+      next.Email = "Dit lijkt geen geldig e-mailadres."
+    if (!value("Onderwerp")) next.Onderwerp = "Vul een onderwerp in."
+    if (value("Bericht").length < 10) next.Bericht = "Vul een bericht van minimaal 10 tekens in."
+
+    setErrors(next)
+    if (Object.keys(next).length) {
+      setOpened(false)
       return
     }
-    setError("")
-    const subject = get("Onderwerp") || "Contact via luciancs.nl"
+
+    const subject = value("Onderwerp")
     const body = [
-      `Naam: ${get("Naam")}`,
-      `Email: ${get("Email")}`,
-      `Mobiel: ${get("Mobiel")}`,
+      `Naam: ${value("Naam")}`,
+      `Email: ${value("Email")}`,
+      `Mobiel: ${value("Mobiel")}`,
       "",
-      message,
+      value("Bericht"),
     ].join("\n")
 
     window.location.href = `mailto:${site.contact.email}?subject=${encodeURIComponent(
       subject,
     )}&body=${encodeURIComponent(body)}`
-    setSent(true)
+    setOpened(true)
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="font-rubik">
-      {FIELDS.map((field) => (
-        <div key={field.name} className="mb-4">
-          <label htmlFor={`field-${field.name}`} className="sr-only">
-            {field.name}
-          </label>
-          <input
-            id={`field-${field.name}`}
-            name={field.name}
-            type={field.type}
-            placeholder={field.name}
-            required={field.required}
-            maxLength={field.maxLength}
-            className="min-h-[3.5em] w-full rounded border border-field-border bg-field px-2 py-[1.07em] text-field-text outline-none focus:border-maroon"
+    <form onSubmit={onSubmit} noValidate className="mt-8">
+      <FieldGroup className="gap-5">
+        {FIELDS.map((field) => (
+          <Field key={field.name} data-invalid={errors[field.name] ? true : undefined}>
+            <FieldLabel htmlFor={`field-${field.name}`} className="text-foreground">
+              {field.label}
+              {field.required ? null : (
+                <span className="ml-1 text-muted-foreground">(optioneel)</span>
+              )}
+            </FieldLabel>
+            <Input
+              id={`field-${field.name}`}
+              name={field.name}
+              type={field.type}
+              required={field.required}
+              maxLength={field.maxLength}
+              aria-invalid={errors[field.name] ? true : undefined}
+              className="h-11 bg-card text-base"
+            />
+            <FieldError>{errors[field.name]}</FieldError>
+          </Field>
+        ))}
+
+        <Field data-invalid={errors.Bericht ? true : undefined}>
+          <FieldLabel htmlFor="field-Bericht" className="text-foreground">
+            Bericht
+          </FieldLabel>
+          <Textarea
+            id="field-Bericht"
+            name="Bericht"
+            rows={8}
+            minLength={10}
+            aria-invalid={errors.Bericht ? true : undefined}
+            className="min-h-40 bg-card text-base"
           />
-        </div>
-      ))}
+          <FieldError>{errors.Bericht}</FieldError>
+        </Field>
+      </FieldGroup>
 
-      <div className="mb-4">
-        <label htmlFor="field-Bericht" className="sr-only">
-          Bericht
-        </label>
-        <textarea
-          id="field-Bericht"
-          name="Bericht"
-          rows={10}
-          minLength={10}
-          placeholder="Bericht"
-          className="w-full rounded border border-field-border bg-field px-2 py-[1.07em] leading-[1.43] text-field-text outline-none focus:border-maroon"
-        />
-      </div>
-
-      {error ? (
-        <p role="alert" className="mb-4 text-center text-maroon">
-          {error}
+      <div className="mt-7 flex flex-wrap items-center gap-4">
+        <Button type="submit" size="cta">
+          Verstuur
+        </Button>
+        <p className="m-0 text-[0.875rem] text-muted-foreground">
+          of mail direct naar{" "}
+          <a
+            href={`mailto:${site.contact.email}`}
+            className="font-medium text-primary underline decoration-primary/35 underline-offset-4 hover:decoration-primary"
+          >
+            {site.contact.email}
+          </a>
         </p>
-      ) : null}
-
-      <div className="text-center">
-        <button
-          type="submit"
-          className="inline-flex items-center justify-center rounded-[3px] border-2 border-maroon-deep bg-maroon-deep px-12 py-4 font-medium tracking-[1px] text-white transition-colors hover:bg-[#6b0000]"
-        >
-          VERSTUUR
-        </button>
       </div>
 
-      {sent ? (
-        <p role="status" className="mt-4 text-center text-muted">
+      {opened ? (
+        <p
+          role="status"
+          className="mt-5 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-[0.9375rem] text-foreground"
+        >
           Uw e-mailprogramma is geopend met dit bericht. Komt er niets tevoorschijn, mail dan direct
           naar {site.contact.email} of bel {site.contact.phone}.
         </p>

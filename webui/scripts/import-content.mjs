@@ -21,8 +21,10 @@
 // Output is committed, so a rebuild never depends on the site staying online:
 //   src/content/pages.json, src/content/site.json
 //   public/*, src/assets/*            (theme images and fonts, renamed flat)
-import { mkdir, writeFile } from "node:fs/promises"
-import { dirname, join, resolve } from "node:path"
+import { execFileSync } from "node:child_process"
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { basename, dirname, join, resolve } from "node:path"
 import { selectAll, selectOne } from "css-select"
 import { textContent } from "domutils"
 import { parseDocument } from "htmlparser2"
@@ -70,6 +72,38 @@ async function download(url, relativePath) {
   const target = join(root, relativePath)
   await mkdir(dirname(target), { recursive: true })
   await writeFile(target, buf)
+  return { name: relativePath, bytes: buf.byteLength }
+}
+
+/**
+ * Re-encodes a photo before storing it.
+ *
+ * The originals are print-sized (1280px wide, 84 KiB for a picture that only
+ * ever shows through an 80% dark veil). They are committed and packed into a
+ * ConfigMap that has a 1 MiB ceiling, so the weight matters; ffmpeg is the one
+ * external tool the import needs.
+ */
+async function downloadResized(url, relativePath, { width, quality }) {
+  const source = await getBinary(url)
+  const target = join(root, relativePath)
+  await mkdir(dirname(target), { recursive: true })
+  const out = join(tmpdir(), basename(relativePath))
+  try {
+    execFileSync(
+      "ffmpeg",
+      ["-y", "-loglevel", "error", "-i", "pipe:0", "-vf", `scale=${width}:-2`, "-c:v", "libwebp",
+       "-quality", String(quality), "-compression_level", "6", out],
+      { input: source, stdio: ["pipe", "inherit", "inherit"] },
+    )
+  } catch (error) {
+    throw new Error(`re-encoding ${relativePath} needs ffmpeg on PATH: ${error.message}`)
+  }
+  const buf = await readFile(out)
+  await writeFile(target, buf)
+  await rm(out, { force: true })
+  if (buf.byteLength >= source.byteLength) {
+    throw new Error(`${relativePath}: re-encode produced ${buf.byteLength} bytes, larger than the original`)
+  }
   return { name: relativePath, bytes: buf.byteLength }
 }
 
@@ -757,16 +791,20 @@ await writeFile(
 // Theme assets, renamed flat: nginx serves a single directory and ConfigMap
 // keys cannot contain a slash.
 //
-// Images live in public/ because the components reference them by name in
-// inline styles; fonts live in src/assets/ so the CSS url() lets Vite hash
-// them. Only the latin Rubik subsets are kept - the original also ships
+// Images live in public/media/ because the components reference them by name
+// (and because the build splits that directory into its own ConfigMap to stay
+// under the cluster's object limit); fonts live in src/assets/ so the CSS url()
+// lets Vite hash them. Only the latin Rubik subsets are kept - the original also ships
 // cyrillic, hebrew and cyrillic-ext files the site never renders. The icon
 // fonts are gone entirely, replaced by outlines in src/components/icons.tsx.
 const theme = `${ORIGIN}/wp-content/themes/luciancs/assets`
 const uploads = `${ORIGIN}/wp-content/uploads`
 const assets = await Promise.all([
-  download(`${theme}/images/denker.avif`, "public/denker.avif"),
-  download(`${theme}/images/city-3295173-1280-1280x853.webp`, "public/city.webp"),
+  download(`${theme}/images/denker.avif`, "public/media/denker.avif"),
+  downloadResized(`${theme}/images/city-3295173-1280-1280x853.webp`, "public/media/city.webp", {
+    width: 1024,
+    quality: 58,
+  }),
   download(`${uploads}/2025/05/cropped-logo2-32x32.png`, "public/favicon-32.png"),
   download(`${uploads}/2025/05/cropped-logo2-180x180.png`, "public/apple-touch-icon.png"),
   download(`${theme}/fonts/iJWKBXyIfDnIV7nBrXw.woff2`, "src/assets/rubik-latin.woff2"),

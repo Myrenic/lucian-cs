@@ -116,3 +116,46 @@ export const pathByWpId: Record<string, string> = Object.fromEntries(
 
 export const homePage = pagesByPath["/"]
 if (!homePage) throw new Error("content/pages.json has no '/' page")
+
+const navLabelByPath: Record<string, string> = Object.fromEntries(
+  site.nav.map((item) => [item.href, item.label]),
+)
+
+/** WordPress SEO titles ("Boekhouder Winschoten | LUCIAN") cut back to the name. */
+export function shortTitle(title: string): string {
+  const short = title.replace(/^LUCIAN\s*:\s*/i, "").replace(/\s*[|–—-]\s*LUCIAN\b.*$/i, "").trim()
+  return short || title
+}
+
+export function labelFor(path: string): string {
+  const fromNav = navLabelByPath[path]
+  if (fromNav) return fromNav
+  const page = pagesByPath[path]
+  if (page) return shortTitle(page.title)
+  const last = path.split("/").filter(Boolean).at(-1) ?? ""
+  return last.replace(/\.html$/, "").replace(/-/g, " ")
+}
+
+export type Crumb = { label: string; href: string }
+
+/** Breadcrumb trail derived from the URL, using the labels the menu uses. */
+export function crumbsFor(path: string): Crumb[] {
+  const crumbs: Crumb[] = [{ label: site.brand, href: "/" }]
+  let prefix = ""
+  for (const segment of path.replace(/^\//, "").replace(/\.html$/, "").split("/").filter(Boolean)) {
+    prefix += `/${segment}`
+    const asPage = `${prefix}.html`
+    const href = pagesByPath[asPage] ? asPage : prefix
+    crumbs.push({ label: labelFor(href), href })
+  }
+  return crumbs
+}
+
+/** Most pages open with their own h1 in the article; a few have no body at all. */
+export function hasOwnTitle(page: Page): boolean {
+  return page.sections.some(
+    (section) =>
+      section.t === "prose" &&
+      section.blocks.some((block) => block.t === "heading" && block.level === 1),
+  )
+}

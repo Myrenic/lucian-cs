@@ -1,16 +1,20 @@
 import { useEffect } from "react"
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom"
+import { Button } from "@/components/ui/button"
 import { Hero } from "@/components/Hero"
+import { PageHeader } from "@/components/PageHeader"
 import { Sections } from "@/components/Section"
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome"
-import { homePage, pages, pathByWpId, type Page } from "@/lib/content"
+import { SiteFooter } from "@/components/SiteFooter"
+import { SiteHeader } from "@/components/SiteHeader"
+import { crumbsFor, homePage, pages, pathByWpId, type Page } from "@/lib/content"
+import { pageShell } from "@/lib/layout"
+import { cn } from "@/lib/utils"
 
 export default function App() {
   return (
     <>
       <ScrollToTop />
       <SiteHeader />
-      <Hero />
       <main>
         <Routes>
           {pages.map((page) => (
@@ -37,7 +41,12 @@ function ScrollToTop() {
 
 function PageView({ page }: { page: Page }) {
   useDocumentMeta(page.title, page.description)
-  return <Sections sections={page.sections} />
+  return (
+    <>
+      {page.path === "/" ? <Hero /> : <PageHeader page={page} />}
+      <Sections sections={page.sections} />
+    </>
+  )
 }
 
 function useDocumentMeta(title: string, description: string) {
@@ -61,21 +70,30 @@ function Shortlink() {
 
 function NotFound() {
   useDocumentMeta("Pagina niet gevonden - LUCIAN", "Deze pagina bestaat niet (meer).")
+  const crumbs = crumbsFor("/")
   return (
-    <section className="bg-white py-[60px]">
-      <div className="mx-auto max-w-text px-4 font-rubik">
-        <h1 className="mb-5 text-[1.4rem] font-bold text-maroon">Pagina niet gevonden</h1>
-        <p className="mb-4 leading-[1.6] text-muted">
-          Deze pagina bestaat niet of is verplaatst. Ga terug naar de{" "}
-          <Link to="/" className="text-[#007bff] no-underline hover:underline">
-            homepage
-          </Link>{" "}
-          of neem contact op via{" "}
-          <Link to="/contact.html" className="text-[#007bff] no-underline hover:underline">
-            het contactformulier
-          </Link>
-          .
-        </p>
+    <section className="bg-background py-20 sm:py-28">
+      <div className={cn(pageShell, "flex justify-center")}>
+        <div className="w-full max-w-measure">
+          <p className="m-0 text-[0.75rem] font-semibold tracking-[0.14em] text-primary uppercase">
+            404
+          </p>
+          <h1 className="mt-3 font-heading text-[clamp(1.75rem,3.4vw,2.5rem)] leading-[1.12] font-semibold tracking-[-0.025em] text-foreground">
+            Pagina niet gevonden
+          </h1>
+          <p className="mt-4 leading-[1.7] text-muted-foreground">
+            Deze pagina bestaat niet of is verplaatst. Ga terug naar de homepage of stuur een bericht
+            via het contactformulier.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild size="cta">
+              <Link to={crumbs[0].href}>Terug naar de homepage</Link>
+            </Button>
+            <Button asChild size="cta" variant="outline">
+              <Link to="/contact.html">Neem contact op</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
   )
