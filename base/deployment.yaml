@@ -28,6 +28,12 @@ spec:
       labels:
         app: lucian-cs
         app.kubernetes.io/name: lucian-cs
+      annotations:
+        # Stamped by scripts/build-configmap.mjs on every build. The site is
+        # unpacked into an emptyDir by the initContainer, which only runs when a
+        # pod starts - so without this, new ConfigMaps would be applied and
+        # never read.
+        checksum/config: "a38f3042e3c2686c7f8995b5c7c9c709"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false

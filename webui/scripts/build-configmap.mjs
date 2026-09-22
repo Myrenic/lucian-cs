@@ -23,6 +23,7 @@
 //                             CI compares the committed ConfigMaps byte for byte
 //   * "/" becomes "__"      - ConfigMap keys may not contain a slash, and the
 //                             routes are nested (/info/acties.html)
+import { createHash } from "node:crypto"
 import { readdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join, relative, resolve } from "node:path"
 import { gzipSync } from "fflate"
@@ -73,6 +74,7 @@ for (const file of files) {
 }
 
 const NAMES = { pages: "lucian-pages", webui: "lucian-webui", media: "lucian-media" }
+const written = []
 
 for (const [group, binaryData] of Object.entries(groups)) {
   const keys = Object.keys(binaryData)
@@ -86,6 +88,7 @@ for (const [group, binaryData] of Object.entries(groups)) {
   }
   const json = JSON.stringify(object, null, 2) + "\n"
   await writeFile(join(base, `${group}.configmap.json`), json)
+  written.push(json)
 
   const bytes = Buffer.byteLength(json)
   const kib = Math.round(bytes / 1024)
@@ -97,6 +100,19 @@ for (const [group, binaryData] of Object.entries(groups)) {
     )
   }
 }
+
+// The initContainer unpacks these into an emptyDir when a pod starts, so a
+// changed ConfigMap on its own would go unnoticed until the next restart: the
+// Deployment carries a checksum of everything above, which changes the pod
+// template and makes Flux roll the deployment.
+const digest = createHash("sha256").update(written.join("")).digest("hex").slice(0, 32)
+const deploymentPath = join(base, "deployment.yaml")
+const deployment = await readFile(deploymentPath, "utf8")
+const stamped = deployment.replace(/checksum\/config: "[^"]*"/, `checksum/config: "${digest}"`)
+if (stamped === deployment) {
+  throw new Error("deployment.yaml has no checksum/config annotation to update")
+}
+await writeFile(deploymentPath, stamped)
 
 // Tailwind only emits utilities for class names it finds in the files listed by
 // `@source` in src/index.css. When that list goes stale the site still builds
