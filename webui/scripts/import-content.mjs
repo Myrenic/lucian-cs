@@ -469,7 +469,13 @@ function sourceText(doc) {
   return collapse(parts.join(""))
 }
 
-const strip = (s) => s.replace(/\s+/g, "")
+/**
+ * Whitespace and quotation marks are excluded from the text comparison: the
+ * source wraps quotes in their own `"`, and the site sets them typographically
+ * instead, so those characters are presentational. Everything else still has to
+ * match exactly.
+ */
+const strip = (s) => s.replace(/[\s"“”]+/g, "")
 
 function assertSameText(sections, doc, page) {
   const source = strip(sourceText(doc))
@@ -610,9 +616,12 @@ function services(section) {
   })
 }
 
+/** Quotes arrive wrapped in their own quotation marks; the component sets them. */
+const unquoted = (text) => text.replace(/^["“”]+/, "").replace(/["“”]+$/, "").trim()
+
 function testimonials(section) {
   return findAll(".testimonials-item", section).map((item) => ({
-    quote: collapse(textOf(find(".user_text", item))).trim(),
+    quote: unquoted(collapse(textOf(find(".user_text", item))).trim()),
     name: collapse(textOf(find(".user_name", item))).trim(),
     // Direct child only: .user_text > p carries mbr-content-text as well.
     role: collapse(textOf(find(".testimonials-caption > .mbr-content-text", item))).trim(),
@@ -692,6 +701,15 @@ function cellLines(cell) {
   return lines.filter((line) => line.length)
 }
 
+/**
+ * Footer columns the site deliberately does not publish.
+ *
+ * "Trending" was a short list of external news links the client stopped
+ * updating; leaving it out is an editorial decision, so it is made here rather
+ * than by hiding a column at render time.
+ */
+const OMITTED_COLUMNS = new Set(["Trending"])
+
 function chrome(html) {
   const doc = parse(html)
 
@@ -702,10 +720,12 @@ function chrome(html) {
       label: collapse(textOf(a)).trim(),
       href: normaliseHref(attr(a, "href")),
     })),
-    columns: findAll(".footer2 .footerfix", doc).map((col) => ({
-      title: collapse(textOf(find(".user_name", col))).trim(),
-      lines: cellLines(find("p", col)),
-    })),
+    columns: findAll(".footer2 .footerfix", doc)
+      .map((col) => ({
+        title: collapse(textOf(find(".user_name", col))).trim(),
+        lines: cellLines(find("p", col)),
+      }))
+      .filter((column) => !OMITTED_COLUMNS.has(column.title)),
     copyright: collapse(textOf(find(".footer2 .copyright", doc))).trim(),
     social: findAll(".footer2 .social-list a", doc).map((a) => ({
       name: classStarting(find("span", a), "socicon-").replace("socicon-", "") || collapse(textOf(a)).trim(),
@@ -768,7 +788,10 @@ if (!site.brand) throw new Error("brand missing")
 if (!site.heroHeading) throw new Error("hero heading missing")
 if (!site.nav.length) throw new Error("navigation import produced nothing")
 if (!site.contact.email) throw new Error("contact email missing")
-if (site.columns.length !== 4) throw new Error(`expected 4 footer columns, got ${site.columns.length}`)
+if (site.columns.length !== 3) throw new Error(`expected 3 footer columns, got ${site.columns.length}`)
+if (site.columns.some((column) => OMITTED_COLUMNS.has(column.title))) {
+  throw new Error(`an omitted footer column came back: ${site.columns.map((c) => c.title).join(", ")}`)
+}
 if (site.social.length !== 3) throw new Error(`expected 3 social links, got ${site.social.length}`)
 
 // Provenance is the newest WordPress modification date, not the time of the

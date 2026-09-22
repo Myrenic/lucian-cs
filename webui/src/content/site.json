@@ -152,50 +152,6 @@
           }
         ]
       ]
-    },
-    {
-      "title": "Trending",
-      "lines": [
-        [
-          {
-            "t": "link",
-            "href": "https://tinyurl.com/2jrwtbnx",
-            "c": [
-              {
-                "t": "text",
-                "v": "#Steeds meer ouderen blijven werken"
-              }
-            ],
-            "external": true
-          }
-        ],
-        [
-          {
-            "t": "link",
-            "href": "https://tinyurl.com/4fph92tb",
-            "c": [
-              {
-                "t": "text",
-                "v": "#Terugkeer 'normale' energiecontracten ..."
-              }
-            ],
-            "external": true
-          }
-        ],
-        [
-          {
-            "t": "link",
-            "href": "https://tinyurl.com/3d8ufjbp",
-            "c": [
-              {
-                "t": "text",
-                "v": "#Superrijken; laat ons meer belasting betalen!"
-              }
-            ],
-            "external": true
-          }
-        ]
-      ]
     }
   ],
   "copyright": "© www.1stbuddha.com",

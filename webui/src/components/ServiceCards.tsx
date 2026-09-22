@@ -7,35 +7,29 @@ import { pageShell } from "@/lib/layout"
 import type { ServiceCard } from "@/lib/content"
 
 /**
- * The four service panels from the homepage.
- *
- * The original laid four `col-lg-4` cards in a non-wrapping flex row that
- * overflowed the viewport by 80px at 1440 wide. Here they are a real grid: one
- * column on phones, two on tablets, four on desktop. Each card is one link, so
- * the whole panel is a target rather than the title alone.
+ * The four service panels from the homepage. Stock Card, one link per panel so
+ * the whole card is a target, and a 1/2/4 grid: the original laid four
+ * `col-lg-4` cards in a row that did not wrap and overflowed the viewport.
  */
 export function ServiceCards({ cards }: { cards: ServiceCard[] }) {
   return (
     <div className={pageShell}>
-      <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+      <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
           <li key={card.href} className="flex">
             <Link
               to={card.href}
-              className="group/card flex w-full rounded-xl transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none"
+              className="group/card flex w-full rounded-xl focus-visible:outline-none"
             >
-              <Card className="h-full w-full gap-5 bg-card shadow-[var(--shadow-card)] ring-1 ring-foreground/10 transition-all duration-200 group-hover/card:ring-primary/30 group-hover/card:shadow-[var(--shadow-lift)] group-focus-visible/card:ring-primary">
+              <Card className="h-full w-full transition-colors group-hover/card:ring-primary/40 group-focus-visible/card:ring-primary">
                 <CardHeader className="gap-4">
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex size-11 items-center justify-center rounded-lg bg-primary/8 text-primary ring-1 ring-primary/12">
                       <Icon name={card.icon} className="size-6" />
                     </span>
-                    <ArrowUpRight
-                      className="mt-0.5 size-4 text-muted-foreground/70 transition-all duration-200 group-hover/card:translate-x-0.5 group-hover/card:-translate-y-0.5 group-hover/card:text-primary"
-                      aria-hidden="true"
-                    />
+                    <ArrowUpRight className="mt-0.5 size-4 text-muted-foreground" aria-hidden="true" />
                   </div>
-                  <h3 className="font-heading text-[1.0625rem] leading-snug font-semibold text-foreground">
+                  <h3 className="font-heading text-[1.0625rem] leading-snug font-semibold">
                     {card.title}
                   </h3>
                 </CardHeader>
@@ -43,7 +37,7 @@ export function ServiceCards({ cards }: { cards: ServiceCard[] }) {
                   <p className="leading-relaxed">
                     <Inlines nodes={card.lead} />
                   </p>
-                  <ul className="mt-auto space-y-1.5 border-t border-border pt-3 text-[0.9375rem]">
+                  <ul className="mt-auto space-y-1.5 border-t pt-3 text-[0.9375rem]">
                     {card.items.map((item) => (
                       <li key={item} className="flex gap-2">
                         <span aria-hidden="true" className="mt-2 size-1 shrink-0 rounded-full bg-primary/45" />

@@ -63,12 +63,11 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Two roles shadcn's set has no name for: the dark band that closes every
-     page, and the tints the service cards use. */
+  /* One role shadcn's set has no name for: the dark band that opens and closes
+     every page, which is a near-black from the maroon family. */
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
   --color-ink-muted: var(--ink-muted);
-  --color-surface: var(--surface);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -80,9 +79,6 @@
      because the same text measures better at 1200/720 with the new type scale. */
   --container-page: 1200px;
   --container-measure: 720px;
-
-  --shadow-card: 0 1px 2px oklch(0.23 0.01 28 / 4%), 0 8px 24px -12px oklch(0.23 0.01 28 / 12%);
-  --shadow-lift: 0 2px 4px oklch(0.23 0.01 28 / 5%), 0 18px 36px -18px oklch(0.23 0.01 28 / 22%);
 }
 
 :root {
@@ -115,9 +111,8 @@
   --ink: oklch(0.2273 0.0331 26.14);
   --ink-foreground: oklch(0.9686 0.0051 67.76);
   --ink-muted: oklch(0.7295 0.0176 40.51);
-  --surface: oklch(0.9762 0.0033 65.1);
 
-  --radius: 0.75rem;
+  --radius: 0.625rem;
 }
 
 @layer base {

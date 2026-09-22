@@ -100,7 +100,6 @@ const SENTINELS = [
   "text-muted-foreground", // running text
   "max-w-page", // the page shell
   "max-w-measure", // article measure
-  "shadow-card", // themed card shadow
   // one per generated directory, so a missing @source glob fails the build
   // instead of shipping a half-styled site
   "bg-card",
