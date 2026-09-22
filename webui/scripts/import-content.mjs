@@ -340,10 +340,14 @@ function blocks(node, out = [], align) {
       for (const item of children(child)) {
         if (tagOf(item) === "li") {
           listItems(item, items)
-        } else {
-          flushList()
-          handle(item)
+          continue
         }
+        // Whitespace and comments between <li>s are formatting, not content:
+        // treating them as "something else" would close the list after every
+        // item and turn one list into one list per bullet.
+        if (item.type === "comment" || (item.type === "text" && item.data.trim() === "")) continue
+        flushList()
+        handle(item)
       }
       flushList()
       flush()
@@ -480,7 +484,7 @@ function contentCounts(sections) {
 }
 
 function blockCounts(blocks) {
-  const counts = { heading: 0, listItems: 0, divider: 0, contactForm: 0, link: 0 }
+  const counts = { heading: 0, lists: 0, listItems: 0, divider: 0, contactForm: 0, link: 0 }
   const walkInline = (nodes) => {
     for (const node of nodes) {
       if (node.t === "link") counts.link++
@@ -492,6 +496,7 @@ function blockCounts(blocks) {
     if (block.t === "divider") counts.divider++
     if (block.t === "contactForm") counts.contactForm++
     if (block.t === "list") {
+      counts.lists++
       counts.listItems += block.c.length
       for (const item of block.c) walkInline(item)
     } else if (block.c) {
@@ -501,10 +506,32 @@ function blockCounts(blocks) {
   return counts
 }
 
+/**
+ * Every run of consecutive <li> siblings becomes exactly one list block. This
+ * is the shape the converter implements, so counting runs is what catches a
+ * list being split (or two being merged) rather than merely a wrong total:
+ * whitespace between <li>s once turned every bullet into its own list, and the
+ * item count alone could not see it.
+ */
+function countListItemRuns(node) {
+  let runs = 0
+  for (const list of findAll("ul, ol", node)) {
+    let previousWasItem = false
+    for (const child of children(list)) {
+      if (child.type === "comment" || (child.type === "text" && child.data.trim() === "")) continue
+      const isItem = tagOf(child) === "li"
+      if (isItem && !previousWasItem) runs++
+      previousWasItem = isItem
+    }
+  }
+  return runs
+}
+
 /** Fails loudly when a prose section dropped, merged or invented structure. */
 function assertProseStructure(node, blocks, page) {
   const source = {
     heading: findAll("h1, h2, h3, h4, h5, h6", node).length,
+    lists: countListItemRuns(node),
     listItems: findAll("li", node).length,
     divider: findAll("hr", node).length,
     contactForm: findAll("form", node).length,
