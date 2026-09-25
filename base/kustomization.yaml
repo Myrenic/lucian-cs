@@ -2,10 +2,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  # Three ConfigMaps because one object may not exceed 1 MiB: the prerendered
-  # pages, the hashed bundle, and the photographs. An initContainer unpacks the
-  # first two into the pod before nginx starts.
-  - ./pages.configmap.json
+  # A ConfigMap may not exceed 1 MiB and the inlined stylesheet makes each page
+  # ~14 KiB, so the 42 prerendered pages are two objects rather than one. An
+  # initContainer unpacks them and the bundle into the pod before nginx starts.
+  - ./pages-a.configmap.json
+  - ./pages-b.configmap.json
   - ./webui.configmap.json
   - ./media.configmap.json
   - ./nginx.configmap.yaml

@@ -25,7 +25,7 @@
 //   * "/" becomes "__"      - ConfigMap keys may not contain a slash, and the
 //                             routes are nested (/info/acties.html)
 import { createHash } from "node:crypto"
-import { readdir, readFile, writeFile } from "node:fs/promises"
+import { readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname, join, relative, resolve } from "node:path"
 import { gzipSync } from "fflate"
 
@@ -91,6 +91,7 @@ const halves = {
 }
 
 const written = []
+const outputs = new Set()
 
 for (const [group, binaryData] of Object.entries({ ...halves, webui: groups.webui, media: groups.media })) {
   const keys = Object.keys(binaryData)
@@ -104,6 +105,7 @@ for (const [group, binaryData] of Object.entries({ ...halves, webui: groups.webu
   }
   const json = JSON.stringify(object, null, 2) + "\n"
   await writeFile(join(base, `${group}.configmap.json`), json)
+  outputs.add(`${group}.configmap.json`)
   written.push(json)
 
   const bytes = Buffer.byteLength(json)
@@ -114,6 +116,16 @@ for (const [group, binaryData] of Object.entries({ ...halves, webui: groups.webu
       `${NAMES[group]} is ${kib} KiB, over the cluster's 1 MiB object limit - ` +
         `move part of it into its own ConfigMap`,
     )
+  }
+}
+
+// A renamed or dropped object must not survive on disk: the stale file would
+// still be referenced by kustomization.yaml and applied, which is exactly how a
+// page ConfigMap kept being served while the Deployment moved to new names.
+for (const file of await readdir(base)) {
+  if (file.endsWith(".configmap.json") && !outputs.has(file)) {
+    await rm(join(base, file), { force: true })
+    console.log(`removed stale ${file}`)
   }
 }
 
