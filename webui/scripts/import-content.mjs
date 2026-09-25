@@ -21,6 +21,7 @@
 // Output is committed, so a rebuild never depends on the site staying online:
 //   src/content/pages.json, src/content/site.json
 //   public/*, src/assets/*            (theme images and fonts, renamed flat)
+import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
@@ -30,6 +31,9 @@ import { textContent } from "domutils"
 import { parseDocument } from "htmlparser2"
 
 const ORIGIN = "https://www.luciancs.nl"
+
+/** Logical name -> fingerprinted path, written to src/content/media.json. */
+const media = {}
 
 /** The domain the site will live on, once it leaves the preview host. Kept here
  *  because canonicals, Open Graph URLs and the sitemap all need one source. */
@@ -94,6 +98,24 @@ async function download(url, relativePath) {
  * packed into a ConfigMap with a size ceiling, so they are re-encoded on the way
  * in. ffmpeg is the one external tool the import needs.
  */
+/**
+ * Stores a media file under a content-addressed name: `/media/denker.<hash>.avif`.
+ *
+ * Two reasons. Fingerprinted names may be cached for a year instead of a week
+ * (Lighthouse says so, and it is true), and the hero has to ship several widths
+ * - the original is 2000px wide for a slot that is often 400px.
+ */
+async function downloadMedia(url, key, extension, filter, encode) {
+  const name = await downloadImage(url, `public/media/${key}.${extension}`, filter, encode)
+  const bytes = await readFile(join(root, `public/media/${key}.${extension}`))
+  const digest = createHash("sha256").update(bytes).digest("hex").slice(0, 8)
+  const hashed = `${key}.${digest}.${extension}`
+  await rm(join(root, `public/media/${key}.${extension}`), { force: true })
+  await writeFile(join(root, `public/media/${hashed}`), bytes)
+  media[key] = `/media/${hashed}`
+  return { name: hashed, bytes: bytes.byteLength }
+}
+
 async function downloadImage(url, relativePath, filter, encode) {
   const source = await getBinary(url)
   const target = join(root, relativePath)
@@ -834,27 +856,52 @@ await writeFile(
 // lets Vite hash them. Only the latin Rubik subsets are kept - the original also ships
 // cyrillic, hebrew and cyrillic-ext files the site never renders. The icon
 // fonts are gone entirely, replaced by outlines in src/components/icons.tsx.
+// 2000 is the source width, so the largest variant is the original, re-encoded.
+const HERO_WIDTHS = [800, 1200, 1600, 2000]
+
 const theme = `${ORIGIN}/wp-content/themes/luciancs/assets`
 const uploads = `${ORIGIN}/wp-content/uploads`
 const assets = await Promise.all([
-  download(`${theme}/images/denker.avif`, "public/media/denker.avif"),
-  downloadImage(
-    `${theme}/images/denker.avif`,
-    "public/media/og.jpg",
-    "crop=iw:iw*1050/2000:0:ih*0.08,scale=1200:630",
-    ["-q:v", "4", "-f", "mjpeg"],
-  ),
-  downloadImage(
-    `${theme}/images/city-3295173-1280-1280x853.webp`,
-    "public/media/city.webp",
-    "scale=1024:-2",
-    ["-c:v", "libwebp", "-quality", "58", "-compression_level", "6"],
-  ),
   download(`${uploads}/2025/05/cropped-logo2-32x32.png`, "public/favicon-32.png"),
   download(`${uploads}/2025/05/cropped-logo2-180x180.png`, "public/apple-touch-icon.png"),
   download(`${theme}/fonts/iJWKBXyIfDnIV7nBrXw.woff2`, "src/assets/rubik-latin.woff2"),
   download(`${theme}/fonts/iJWKBXyIfDnIV7nPrXyi0A.woff2`, "src/assets/rubik-latin-ext.woff2"),
+
+  // The testimonial background only ever shows through an 80% veil, so it can be
+  // compressed hard and scaled down.
+  downloadMedia(`${theme}/images/city-3295173-1280-1280x853.webp`, "city", "webp", "scale=960:-2", [
+    "-c:v",
+    "libwebp",
+    "-quality",
+    "45",
+    "-compression_level",
+    "6",
+  ]),
+  // The social card: 1200x630 is what scrapers expect.
+  downloadMedia(
+    `${theme}/images/denker.avif`,
+    "og",
+    "jpg",
+    "crop=iw:iw*1050/2000:0:ih*0.08,scale=1200:630",
+    ["-q:v", "4", "-f", "mjpeg"],
+  ),
+  // The hero at the widths a phone, a laptop and a large screen actually ask
+  // for, instead of one 2000px file everyone downloads.
+  ...HERO_WIDTHS.map((width) =>
+    downloadMedia(`${theme}/images/denker.avif`, `hero-${width}`, "avif", `scale=${width}:-2`, [
+      "-c:v",
+      "libaom-av1",
+      "-crf",
+      "38",
+      "-still-picture",
+      "1",
+      "-f",
+      "avif",
+    ]),
+  ),
 ])
+
+await writeFile(join(contentDir, "media.json"), JSON.stringify(media, null, 2) + "\n")
 
 console.log(
   `pages: ${pages.length} | sections: ${pages.reduce((n, p) => n + p.sections.length, 0)} | ` +

@@ -33,7 +33,7 @@ spec:
         # unpacked into an emptyDir by the initContainer, which only runs when a
         # pod starts - so without this, new ConfigMaps would be applied and
         # never read.
-        checksum/config: "d7be6db7397fc6044e4bf35c3f18fc5a"
+        checksum/config: "27c8e25742d0eb113f9388f7374880c8"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -53,7 +53,7 @@ spec:
             - |
               set -e
               cd /html
-              for dir in /pages /assets; do
+              for dir in /pages-a /pages-b /assets; do
                 for f in "$dir"/*; do
                   [ -f "$f" ] || continue
                   name=$(basename "$f")
@@ -67,8 +67,11 @@ spec:
               cp /media/* media/
               echo "unpacked $(find . -type f | wc -l) files"
           volumeMounts:
-            - name: pages
-              mountPath: /pages
+            - name: pages-a
+              mountPath: /pages-a
+              readOnly: true
+            - name: pages-b
+              mountPath: /pages-b
               readOnly: true
             - name: assets
               mountPath: /assets
@@ -132,9 +135,12 @@ spec:
               type: RuntimeDefault
             readOnlyRootFilesystem: true
       volumes:
-        - name: pages
+        - name: pages-a
           configMap:
-            name: lucian-pages
+            name: lucian-pages-a
+        - name: pages-b
+          configMap:
+            name: lucian-pages-b
         - name: assets
           configMap:
             name: lucian-webui

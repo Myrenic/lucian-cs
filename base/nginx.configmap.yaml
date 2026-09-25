@@ -22,9 +22,13 @@ metadata:
 data:
   default.conf: |
     map $uri $cache_control {
-        default                                   "no-cache";
-        ~^/index\.[A-Za-z0-9_-]+\.(js|css|woff2)$ "public, max-age=31536000, immutable";
-        ~\.(png|jpg|webp|avif|svg)$               "public, max-age=604800";
+        default                                      "no-cache";
+        ~^/index\.[A-Za-z0-9_-]+\.(js|woff2)$        "public, max-age=31536000, immutable";
+        # The two files that keep a fixed name, so they cannot be immutable.
+        ~^/(favicon-32\.png|apple-touch-icon\.png)$  "public, max-age=604800";
+        # Photographs are content-addressed (denker.8f3a1c.avif), which is what
+        # lets them be cached for a year instead of a week.
+        ~\.(png|jpg|webp|avif|svg)$                  "public, max-age=31536000, immutable";
     }
 
     server {

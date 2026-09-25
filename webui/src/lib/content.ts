@@ -3,6 +3,7 @@
 // Both files are produced by scripts/import-content.mjs from luciancs.nl and
 // committed, so the site builds and serves without the WordPress install being
 // reachable. Nothing here talks to the network.
+import mediaJson from "@/content/media.json"
 import pagesJson from "@/content/pages.json"
 import siteJson from "@/content/site.json"
 
@@ -130,6 +131,19 @@ export const notFoundPage: Page = {
 
 export const homePage = pagesByPath["/"]
 if (!homePage) throw new Error("content/pages.json has no '/' page")
+
+/**
+ * Fingerprinted media paths written by the import (src/content/media.json).
+ * Content-addressed so they can be cached for a year, and so the hero can ship
+ * several widths: the source photograph is 2000px for a slot that is often 400.
+ */
+const mediaFiles: Record<string, string> = mediaJson
+
+export function mediaPath(key: string): string {
+  const path = mediaFiles[key]
+  if (!path) throw new Error(`media.json has no "${key}" - re-run the import`)
+  return path
+}
 
 const navLabelByPath: Record<string, string> = Object.fromEntries(
   site.nav.map((item) => [item.href, item.label]),

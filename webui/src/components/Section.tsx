@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Content } from "@/components/Content"
 import { ServiceCards } from "@/components/ServiceCards"
-import type { Section as SectionType, Testimonial } from "@/lib/content"
+import { mediaPath, type Section as SectionType, type Testimonial } from "@/lib/content"
 
 /**
  * The four kinds of band the pages are built from, in the order the source put
@@ -72,7 +72,7 @@ function Testimonials({ items }: { items: Testimonial[] }) {
   return (
     <div className="relative isolate overflow-hidden">
       <img
-        src="/media/city.webp"
+        src={mediaPath("city")}
         alt=""
         aria-hidden="true"
         loading="lazy"

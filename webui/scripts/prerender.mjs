@@ -23,6 +23,36 @@ const content = JSON.parse(await readFile(join(root, "src/content/pages.json"), 
 const site = JSON.parse(await readFile(join(root, "src/content/site.json"), "utf8"))
 const { render } = await import(ssrEntry)
 
+// Tailwind only emits utilities for class names it finds in the files listed by
+// `@source` in src/index.css. When that list goes stale the site still builds
+// and still runs - it just renders unstyled, which is the kind of failure nobody
+// notices until it is deployed. The stylesheet is in hand here, so this is where
+// it is checked, before it is inlined into 42 pages.
+const SENTINELS = [
+  ".page{", // the layout utility every band uses
+  "bg-foreground", // the dark bands
+  "text-muted-foreground", // running text
+  "max-w-3xl", // the article measure
+  "bg-card",
+  "bg-primary",
+]
+
+async function stylesheet() {
+  const file = (await readdir(www)).find((name) => name.endsWith(".css"))
+  if (!file) throw new Error("no stylesheet in the client build")
+  const css = await readFile(join(www, file), "utf8")
+  const missing = SENTINELS.filter((selector) => !css.includes(selector))
+  if (missing.length) {
+    throw new Error(
+      `the stylesheet is missing ${missing.join(", ")} - ` +
+        `a directory with class names is not covered by @source in src/index.css`,
+    )
+  }
+  // Inlined below, and removed so it is not also shipped as a file.
+  await rm(join(www, file), { force: true })
+  return css
+}
+
 /** "/" -> index.html, "/info/acties.html" -> info/acties.html */
 const fileFor = (path) => (path === "/" ? "index.html" : path.replace(/^\//, ""))
 
@@ -57,10 +87,22 @@ async function fontPreload() {
   return null
 }
 
+// The stylesheet is inlined rather than linked: it is small, it is on the
+// critical path for the first paint, and a link would cost a round trip before
+// the page can render at all. Everything else in the head is a real asset that
+// benefits from being cached separately.
+const css = await stylesheet()
+
 const assetTags = parseTags(template)
-const head = assetTags
-  .filter((tag) => tag.name === "link")
-  .map((tag, index) => createElement(tag.name, { key: `head-${index}`, ...tag.props }))
+const head = [
+  createElement("style", {
+    key: "stylesheet",
+    dangerouslySetInnerHTML: { __html: css },
+  }),
+  ...assetTags
+    .filter((tag) => tag.name === "link" && tag.props.rel !== "stylesheet")
+    .map((tag, index) => createElement(tag.name, { key: `head-${index}`, ...tag.props })),
+]
 const body = assetTags
   .filter((tag) => tag.name === "script")
   .map((tag, index) => createElement(tag.name, { key: `body-${index}`, ...tag.props }))

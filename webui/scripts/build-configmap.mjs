@@ -9,9 +9,10 @@
 // Three objects, because a ConfigMap may not exceed 1 MiB and one bundle of
 // prerendered HTML plus JavaScript does:
 //
-//   lucian-pages   the 42 prerendered pages and the sitemap
-//   lucian-webui   hashed JavaScript, CSS, fonts, favicons
-//   lucian-media   the photographs
+//   lucian-pages-a  } the 42 prerendered pages and the sitemap, in two halves.
+//   lucian-pages-b  } the stylesheet is inlined into every page, so they are big
+//   lucian-webui    hashed JavaScript, fonts, favicons
+//   lucian-media    the photographs
 //
 // Two transformations make that fit, and both are undone by the initContainer:
 //
@@ -73,10 +74,25 @@ for (const file of files) {
   }
 }
 
-const NAMES = { pages: "lucian-pages", webui: "lucian-webui", media: "lucian-media" }
+// The pages are split in two, always, because the inlined stylesheet makes each
+// page ~14 KiB: one object of 42 of them is 90% of the 1 MiB ceiling, and the
+// site is expected to grow. Two halves keep both objects at half of that.
+const NAMES = {
+  "pages-a": "lucian-pages-a",
+  "pages-b": "lucian-pages-b",
+  webui: "lucian-webui",
+  media: "lucian-media",
+}
+
+const pageKeys = Object.keys(groups.pages)
+const halves = {
+  "pages-a": Object.fromEntries(Object.entries(groups.pages).slice(0, Math.ceil(pageKeys.length / 2))),
+  "pages-b": Object.fromEntries(Object.entries(groups.pages).slice(Math.ceil(pageKeys.length / 2))),
+}
+
 const written = []
 
-for (const [group, binaryData] of Object.entries(groups)) {
+for (const [group, binaryData] of Object.entries({ ...halves, webui: groups.webui, media: groups.media })) {
   const keys = Object.keys(binaryData)
   if (!keys.length) throw new Error(`${group} would be empty`)
 
@@ -113,30 +129,6 @@ if (!/checksum\/config: "[^"]*"/.test(deployment)) {
 }
 // Rewriting it to the same value is the normal case: nothing changed.
 await writeFile(deploymentPath, deployment.replace(/checksum\/config: "[^"]*"/, `checksum/config: "${digest}"`))
-
-// Tailwind only emits utilities for class names it finds in the files listed by
-// `@source` in src/index.css. When that list goes stale the site still builds
-// and still runs - it just renders unstyled, which is exactly the kind of
-// failure nobody notices until it is deployed. One sentinel per design area:
-const SENTINELS = [
-  ".page{", // the layout utility every band uses
-  "bg-foreground", // the dark bands
-  "text-muted-foreground", // running text
-  "max-w-3xl", // the article measure
-  "bg-card",
-  "bg-primary",
-]
-
-const stylesheet = files.find((file) => file.endsWith(".css"))
-if (!stylesheet) throw new Error("no stylesheet in the build output")
-const css = await readFile(stylesheet, "utf8")
-const missing = SENTINELS.filter((selector) => !css.includes(selector))
-if (missing.length) {
-  throw new Error(
-    `the stylesheet is missing ${missing.join(", ")} - ` +
-      `a directory with class names is not covered by @source in src/index.css`,
-  )
-}
 
 const pages = await readdir(www, { recursive: true })
 console.log(

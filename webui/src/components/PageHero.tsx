@@ -8,10 +8,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { crumbsFor, hasOwnTitle, homePage, shortTitle, site, type Page } from "@/lib/content"
+import {
+  crumbsFor,
+  hasOwnTitle,
+  homePage,
+  mediaPath,
+  shortTitle,
+  site,
+  type Page,
+} from "@/lib/content"
 import { cn } from "@/lib/utils"
 
 const contact = site.nav.find((item) => item.href === "/contact.html")
+const HERO_WIDTHS = [800, 1200, 1600, 2000]
 
 /**
  * The band under the header, on every page.
@@ -30,9 +39,14 @@ export function PageHero({ page }: { page?: Page }) {
       )}
     >
       <img
-        src="/media/denker.avif"
+        src={mediaPath("hero-1600")}
+        srcSet={HERO_WIDTHS.map((width) => `${mediaPath(`hero-${width}`)} ${width}w`).join(", ")}
+        sizes="100vw"
         alt=""
         aria-hidden="true"
+        // The largest thing above the fold: it is the LCP element, so it is
+        // requested early and at the width the viewport actually needs.
+        fetchPriority="high"
         className={cn(
           "absolute inset-0 -z-20 size-full object-cover",
           page ? "object-[52%_28%] opacity-40" : "object-[52%_35%]",
