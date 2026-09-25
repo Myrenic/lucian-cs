@@ -3,26 +3,26 @@ import type { SocialName } from "@/lib/content"
 // The three brand marks, lifted from the fonts the WordPress theme shipped
 // (socicon.woff). lucide has no brand icons, so these three paths are the only
 // icons in the project that are not from lucide.
-const GLYPHS: Record<SocialName, { viewBox: string; d: string }> = {
+const GLYPHS: Record<SocialName, { d: string }> = {
   facebook: {
-    viewBox: "0 0 512 512",
     d: "M296 0L202 0L202 234L123 234L123 325L202 325L202 392C202 470 249 512 319 512C352 512 381 510 389 508L389 427L341 427C303 427 296 409 296 383L296 325L386 325L374 234L296 234Z",
   },
   linkedin: {
-    viewBox: "0 0 512 512",
     d: "M383 250C389 241 392 228 392 211L392 14C392 11 394 8 396 5C399 3 402 1 405 1L499 1C502 1 506 3 508 5C511 8 512 11 512 14L512 232C512 274 500 305 476 327C452 348 419 358 376 358C339 358 308 348 285 326L285 334C285 335 284 338 284 341C283 344 282 347 280 348C278 349 275 350 272 350L183 350C180 350 177 348 174 346C172 343 170 340 170 337L170 14C170 11 172 8 174 5C177 3 180 1 183 1L275 1C278 1 282 3 284 5C287 8 288 11 288 14L288 189C288 212 292 230 301 243C310 255 325 262 347 262C364 262 376 258 383 250ZM106 405C118 417 124 431 124 449C124 466 118 480 106 492C94 504 79 511 62 511C45 511 30 504 18 492C6 480 0 466 0 449C0 431 6 417 18 405C30 393 45 386 62 386C79 386 94 393 106 405Z",
   },
   twitter: {
-    viewBox: "0 0 512 512",
     d: "M460 360C480 375 498 394 512 415C493 406 473 401 452 398C473 411 490 432 498 456C478 444 455 436 431 431C412 451 385 464 354 464C296 464 249 417 249 359C249 351 250 343 252 335C165 339 87 381 36 445C27 429 21 411 21 392C21 356 40 323 68 305C51 305 35 310 21 318L21 316C21 266 57 223 105 213C96 211 87 210 77 210C70 210 64 210 57 212C71 170 110 139 156 139C120 110 74 94 25 94C17 94 8 94 0 95C46 65 102 48 161 48C354 48 460 208 460 347Z",
   },
 }
 
 export function SocialIcon({ name, className }: { name: SocialName; className?: string }) {
-  const glyph = GLYPHS[name]
   return (
-    <svg className={className} viewBox={glyph.viewBox} aria-hidden="true" focusable="false">
-      <path d={glyph.d} fill="currentColor" />
+    <svg className={className} viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+      {/* Font units grow upwards, so the outlines arrive upside down: the group
+          flips them, using the font's own ascent as the baseline. */}
+      <g transform="translate(0 514) scale(1 -1)">
+        <path d={GLYPHS[name].d} fill="currentColor" />
+      </g>
     </svg>
   )
 }

@@ -61,21 +61,11 @@ function HomeBand() {
       <p className="mt-5 max-w-xl text-lg leading-relaxed text-background/75 text-pretty">
         {homePage.description}
       </p>
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        {contact ? (
-          <Button asChild size="cta">
-            <Link to={contact.href}>{contact.label}</Link>
-          </Button>
-        ) : null}
-        <Button
-          asChild
-          size="cta"
-          variant="outline"
-          className="border-white/30 text-white hover:bg-white/10 hover:text-white"
-        >
-          <a href="#diensten">Bekijk diensten</a>
+      {contact ? (
+        <Button asChild size="cta" className="mt-8">
+          <Link to={contact.href}>{contact.label}</Link>
         </Button>
-      </div>
+      ) : null}
     </div>
   )
 }
