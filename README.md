@@ -354,16 +354,42 @@ Page heights, before and after the rework, at 1440×1000:
 `docs/reference/` holds both: `original-*.png` from luciancs.nl and
 `rework-*.png` from the deployed preview, at desktop and mobile widths.
 
-Page speed, homepage, measured on the deployed site:
+## Speed
 
-| | SPA (before) | Prerendered |
+Lighthouse, homepage, on the deployed site. Desktop is a single stable run;
+mobile is the median of three, on a host that was under load 6.5 throughout, so
+the CPU-bound numbers (TBT) move by 2x between sessions with identical code -
+treat your own Chrome as the reference.
+
+| | Desktop | Mobile |
 |---|---|---|
-| HTML | 0.8 KiB, no page text | 41 KiB raw, **9.2 KiB gzipped**, whole page in the markup |
-| First paint needs JavaScript | yes | no - text paints with the HTML and CSS |
-| JavaScript | 552 KiB raw / 172 KiB gzipped | unchanged |
-| Stylesheet | 61 KiB raw / 11 KiB gzipped | unchanged |
-| Requests, first load | 5 | 5 (one origin, nothing third-party) |
+| Performance | **100** | 94 |
+| Accessibility / Best practices | 100 / 100 | 100 / 100 |
+| First contentful paint | 0.44 s | 2.1 s |
+| Largest contentful paint | 0.49 s | 2.1 s |
+| Total blocking time | 2 ms | 185 ms |
+| Cumulative layout shift | 0 | 0 |
+
+What the site serves for that first paint:
+
+| | Before this pass | Now |
+|---|---|---|
+| Hero image, mobile | one 70 KiB AVIF | **9.4 KiB** (800w of four widths, srcset + `fetchpriority="high"`) |
+| Stylesheet | 11 KiB gzipped, render-blocking | **inlined**, no blocking request |
+| Images and fonts | cached a week | content-addressed, cached a year, immutable |
 | Unknown path | 200 with the homepage | **404** |
+| Requests | 5, one origin, nothing third-party | unchanged |
+
+Measured, not assumed: inlining the stylesheet beats linking it - three
+Lighthouse runs each, same server, FCP 4.11 s vs 4.26 s and LCP 4.41 s vs
+4.49 s, with TBT unchanged, so the parse cost is nil and the saved round trip is
+real. That is why the pages ship two ConfigMaps instead of one.
+
+The remaining lever is the JavaScript bundle: 549 KiB raw, 169 KiB gzipped, of
+which roughly 150 KiB is the content of the forty pages you are *not* on. It
+cannot simply be code-split, because hydration needs the current route's content
+to match the prerendered markup - the fix is to await that route's chunk before
+hydrating, which is a restructure of the entry point rather than a build flag.
 
 All 41 sitemap URLs return 200, the 404 returns 404, and the build is
 byte-reproducible - `npm run build` twice produces an identical ConfigMap, which
