@@ -35,7 +35,7 @@ export function PageHero({ page }: { page?: Page }) {
     <section
       className={cn(
         "relative isolate overflow-hidden bg-foreground",
-        !page && "flex min-h-[34rem] items-end lg:min-h-[40rem]",
+        !page && "flex min-h-[34rem] flex-col justify-between lg:min-h-[40rem]",
       )}
     >
       <img
@@ -68,19 +68,25 @@ export function PageHero({ page }: { page?: Page }) {
 
 function HomeBand() {
   return (
-    <div className="page pt-32 pb-14 sm:pb-18 lg:pb-22">
-      <h1 className="max-w-4xl font-heading text-[clamp(2.125rem,5.2vw,3.375rem)] leading-[1.06] font-semibold text-white text-balance">
-        {site.heroHeading}
-      </h1>
-      <p className="mt-5 max-w-xl text-lg leading-relaxed text-background/75 text-pretty">
-        {homePage.description}
-      </p>
-      {contact ? (
-        <Button asChild size="cta" className="mt-8">
-          <Link to={contact.href}>{contact.label}</Link>
-        </Button>
-      ) : null}
-    </div>
+    <>
+      {/* Title under the header, supporting line and action at the foot: the
+          photograph gets the space in between instead of a void above it. */}
+      <div className="page pt-28 sm:pt-32 lg:pt-36">
+        <h1 className="max-w-4xl font-heading text-[clamp(2.125rem,5.2vw,3.375rem)] leading-[1.06] font-semibold text-white text-balance">
+          {site.heroHeading}
+        </h1>
+      </div>
+      <div className="page pb-12 sm:pb-16">
+        <p className="max-w-xl text-lg leading-relaxed text-background/75 text-pretty">
+          {homePage.description}
+        </p>
+        {contact ? (
+          <Button asChild size="cta" className="mt-6">
+            <Link to={contact.href}>{contact.label}</Link>
+          </Button>
+        ) : null}
+      </div>
+    </>
   )
 }
 

@@ -33,7 +33,7 @@ spec:
         # unpacked into an emptyDir by the initContainer, which only runs when a
         # pod starts - so without this, new ConfigMaps would be applied and
         # never read.
-        checksum/config: "a1355aec365764a9f8918a629cabd376"
+        checksum/config: "16cb816b1e3f26cf29ff28c5b51a4bf0"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
