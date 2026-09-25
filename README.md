@@ -42,8 +42,10 @@ docs/reference/            screenshots of the original and the rework
 
 | | Files | Lines |
 |---|---|---|
-| shadcn components in use | 9 (`ui/`) | 758, generated |
-| the site itself | 9 | ~950 |
+| shadcn components in use | 9 in `ui/` | 758, generated |
+| the site's own components | 9 + `App` | 900 |
+| content and SEO libraries | 2 | 345 |
+| the two entry points | 2 | 86 |
 | stylesheet | 1 | 134 |
 
 Nine site files, one job each: `App` (routes), `PageHero` (the band under the
