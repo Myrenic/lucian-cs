@@ -23,7 +23,7 @@
 //   public/*, src/assets/*            (theme images and fonts, renamed flat)
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import { selectAll, selectOne } from "css-select"
@@ -869,11 +869,11 @@ const assets = await Promise.all([
 
   // The testimonial background only ever shows through an 80% veil, so it can be
   // compressed hard and scaled down.
-  downloadMedia(`${theme}/images/city-3295173-1280-1280x853.webp`, "city", "webp", "scale=960:-2", [
+  downloadMedia(`${theme}/images/city-3295173-1280-1280x853.webp`, "city", "webp", "scale=800:-2", [
     "-c:v",
     "libwebp",
     "-quality",
-    "45",
+    "38",
     "-compression_level",
     "6",
   ]),
@@ -900,6 +900,16 @@ const assets = await Promise.all([
     ]),
   ),
 ])
+
+// Content-addressed names change whenever an image does, so the previous file
+// has to go: it would otherwise keep being shipped in the ConfigMap for ever.
+const current = new Set(Object.values(media).map((path) => basename(path)))
+for (const file of await readdir(join(root, "public/media"))) {
+  if (!current.has(file)) {
+    await rm(join(root, "public/media", file), { force: true })
+    console.log(`removed stale media/${file}`)
+  }
+}
 
 await writeFile(join(contentDir, "media.json"), JSON.stringify(media, null, 2) + "\n")
 
