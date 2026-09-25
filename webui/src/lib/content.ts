@@ -3,7 +3,6 @@
 // Both files are produced by scripts/import-content.mjs from luciancs.nl and
 // committed, so the site builds and serves without the WordPress install being
 // reachable. Nothing here talks to the network.
-import { iconNames, type IconName } from "@/components/icons"
 import pagesJson from "@/content/pages.json"
 import siteJson from "@/content/site.json"
 
@@ -30,11 +29,20 @@ export type Block =
   | { t: "divider"; accent: boolean }
   | { t: "contactForm" }
 
+/**
+ * The icon names the WordPress theme's own classes carry. The import records
+ * those, and ServiceCards maps them onto lucide, which is the icon set shadcn
+ * uses - so the data stays independent of the UI library.
+ */
+export type ServiceIcon = "briefcase" | "idea" | "growing-chart" | "setting"
+const SERVICE_ICONS: ServiceIcon[] = ["briefcase", "idea", "growing-chart", "setting"]
+const isServiceIcon = (value: string): value is ServiceIcon => SERVICE_ICONS.includes(value as ServiceIcon)
+
 export type ServiceCard = {
   title: string
   lead: Inline[]
   href: string
-  icon: IconName
+  icon: ServiceIcon
   items: string[]
 }
 
@@ -77,10 +85,6 @@ export type Site = {
   }
 }
 
-/** The importer only emits icon names it can prove exist in icons.tsx; this
- *  keeps that promise visible in the type system instead of trusting a cast. */
-const isIconName = (value: string): value is IconName => (iconNames as string[]).includes(value)
-
 const normalise = (pages: Page[]): Page[] =>
   pages.map((page) => ({
     ...page,
@@ -89,7 +93,7 @@ const normalise = (pages: Page[]): Page[] =>
         ? {
             ...section,
             cards: section.cards.map((card) => {
-              if (!isIconName(card.icon)) {
+              if (!isServiceIcon(card.icon)) {
                 throw new Error(`unknown icon "${card.icon}" on ${page.path} - re-run the import`)
               }
               return card

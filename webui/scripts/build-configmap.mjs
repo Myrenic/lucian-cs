@@ -119,10 +119,10 @@ await writeFile(deploymentPath, deployment.replace(/checksum\/config: "[^"]*"/, 
 // and still runs - it just renders unstyled, which is exactly the kind of
 // failure nobody notices until it is deployed. One sentinel per design area:
 const SENTINELS = [
-  "bg-ink", // dark header/footer/testimonial bands
+  ".page{", // the layout utility every band uses
+  "bg-foreground", // the dark bands
   "text-muted-foreground", // running text
-  "max-w-page", // the page shell
-  "max-w-measure", // article measure
+  "max-w-3xl", // the article measure
   "bg-card",
   "bg-primary",
 ]

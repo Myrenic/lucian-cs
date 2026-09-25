@@ -8,16 +8,14 @@
    in a light-only design. */
 @custom-variant dark (&:is(.dark *));
 
-/* Tailwind's own file detection found nothing in this repository, and `**` does
-   not recurse in this version (it matched zero directory levels), so every
-   directory holding class names is listed. Adding a directory means adding a
-   glob here - `npm run build` fails when the stylesheet comes out without the
-   utilities the layout depends on. */
+/* Tailwind's file detection found nothing in this repository, and `**` does not
+   recurse here, so every directory holding class names is listed. Adding a
+   directory means adding a glob - `npm run build` fails when the stylesheet
+   comes out without the utilities below. */
 @source "{*.tsx,components/*.tsx,components/ui/*.tsx}";
 
-/* Rubik, the original theme's text face, kept because it is the brand's voice.
-   Only the two latin subsets the site renders; the file is a variable font, so
-   one file per subset covers every weight. */
+/* Rubik, the original theme's face, kept because it is the brand's voice. One
+   variable file per subset covers every weight. */
 @font-face {
   font-family: "Rubik";
   font-style: normal;
@@ -39,7 +37,6 @@
     U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* shadcn's token names, mapped to Tailwind utilities. */
 @theme inline {
   --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Rubik", ui-sans-serif, system-ui, sans-serif;
@@ -63,34 +60,22 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* One role shadcn's set has no name for: the dark band that opens and closes
-     every page, which is a near-black from the maroon family. */
-  --color-ink: var(--ink);
-  --color-ink-foreground: var(--ink-foreground);
-  --color-ink-muted: var(--ink-muted);
-
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-
-  /* The original grid was Bootstrap's 1140/740; both are kept, slightly wider,
-     because the same text measures better at 1200/720 with the new type scale. */
-  --container-page: 1200px;
-  --container-measure: 720px;
 }
 
 :root {
-  /* Brand maroon, taken from the original theme (#800000 / #500000) and warmed
-     by a few degrees so it reads as oxblood rather than pure red. */
+  /* The brand maroon from the original theme (#800000), warmed a few degrees so
+     it reads as oxblood rather than pure red. */
   --primary: oklch(0.3767 0.1546 29.23);
   --primary-foreground: oklch(0.9913 0.0029 84.56);
 
-  /* The original greys (#fff / #efefef / #232323 / #767676) with a touch of
-     warmth, so bands and hairlines sit next to the maroon instead of fighting
-     it. The old #767676 running text was the weakest part of the old design:
-     #6b625f keeps the same quiet tone at a readable contrast. */
+  /* The original's greys (#fff, #efefef, #232323, #767676) with a touch of
+     warmth so the bands sit next to that maroon. Almost all running text was
+     #767676 on the old site, which is the one value worth darkening. */
   --background: oklch(0.9913 0.0029 84.56);
   --foreground: oklch(0.2301 0.0113 27.55);
   --card: oklch(1 0 0);
@@ -108,30 +93,27 @@
   --input: oklch(0.9131 0.0094 62.58);
   --ring: oklch(0.3767 0.1546 29.23);
 
-  --ink: oklch(0.2273 0.0331 26.14);
-  --ink-foreground: oklch(0.9686 0.0051 67.76);
-  --ink-muted: oklch(0.7295 0.0176 40.51);
-
   --radius: 0.625rem;
 }
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-    -webkit-text-size-adjust: 100%;
-  }
+/* The two layout primitives every band shares, so no component repeats them.
+   `bg-foreground text-background` is the dark band, straight from the palette. */
+@utility page {
+  @apply mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8;
+}
 
+@utility band {
+  @apply py-14 sm:py-20 lg:py-24;
+}
+
+@layer base {
   body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    font-size: 1rem;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
   }
 
-  /* Rubik sets 1 as the default for headings; the type scale below sets its own. */
+  /* The imported content uses h1-h4; these are the defaults every heading in
+     the site expects, including the ones inside the article. */
   h1,
   h2,
   h3,
@@ -141,21 +123,7 @@
     text-wrap: balance;
   }
 
-  ::selection {
-    background-color: oklch(0.3767 0.1546 29.23 / 18%);
-  }
-
-  /* A visible, brand-coloured focus ring everywhere, not just on the components
-     that happen to ship one. */
-  :focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
     *,
     *::before,
     *::after {

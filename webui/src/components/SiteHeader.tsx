@@ -12,7 +12,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { site } from "@/lib/content"
-import { pageShell } from "@/lib/layout"
 
 /**
  * Stock shadcn chrome: a sticky bar with a blur and a hairline, ghost buttons
@@ -32,7 +31,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md">
-      <div className={pageShell}>
+      <div className="page">
         <div className="flex h-16 items-center gap-1">
           <Link
             to="/"

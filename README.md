@@ -26,16 +26,39 @@ webui/                     Vite + React 19 + TypeScript + Tailwind 4 source
   scripts/prerender.mjs        renders every route to static HTML
   scripts/build-configmap.mjs  packs the build into three ConfigMaps
   src/content/*.json           imported pages and site chrome (committed)
-  src/components/*.tsx         the site: bands, prose, cards, quotes, form
-  src/components/ui/*.tsx      shadcn components (generated, then yours)
+  src/components/ui/*.tsx      shadcn components - generated, not ours to edit
+  src/components/*.tsx         nine files: the site
   src/entry-client.tsx         hydrates the prerendered markup
   src/entry-server.tsx         renders one route to a document, for prerender
+  src/lib/content.ts           the imported content, typed
   src/lib/seo.ts               canonicals, Open Graph, structured data, FAQ
-  src/index.css                the design tokens, one file
+  src/index.css                tokens and two utilities, nothing else
   public/media/, src/assets/   photographs and fonts (committed)
 base/                      the Flux kustomize base: ConfigMaps + nginx + Deployment
 docs/reference/            screenshots of the original and the rework
 ```
+
+### The surface, by size
+
+| | Files | Lines |
+|---|---|---|
+| shadcn components in use | 9 (`ui/`) | 758, generated |
+| the site itself | 9 | ~950 |
+| stylesheet | 1 | 134 |
+
+Nine site files, one job each: `App` (routes), `PageHero` (the band under the
+header, homepage or page), `Section` (the four band types), `Content` (the
+imported AST: headings, paragraphs, lists, rules, inline runs), `ServiceCards`,
+`ContactForm`, `SiteHeader`, `SiteFooter`, `PageMeta` (the head), plus `icons`
+for the three brand marks lucide does not have.
+
+Everything else is the framework: buttons, cards, inputs, textarea, label,
+sheet, breadcrumb, separator and field primitives come from `shadcn add` and are
+left alone. The stylesheet carries the token values, shadcn's own `@theme`
+mapping, the two Rubik `@font-face` blocks and exactly two custom utilities -
+`page` (the shell) and `band` (vertical rhythm). Dark bands are
+`bg-foreground text-background`, straight from the palette, rather than a token
+of their own.
 
 There is no database and no CMS. The build prerenders all 41 routes to real
 HTML files, which are served by stock nginx from ConfigMaps - so a crawler that
@@ -231,6 +254,9 @@ Each of these is a decision, not an accident, and each is reversible:
 * **Two lines of new UI copy**: the hero's buttons ("Neem contact op",
   "Bekijk diensten"). Every other word on the site is imported. The hero's lead
   sentence is the homepage's own meta description, not new text.
+* **Icons are lucide, except three.** shadcn ships lucide; the service cards use
+  it, and the WordPress theme's own glyphs survive only as the three brand marks
+  (Facebook, LinkedIn, Twitter) that lucide does not carry.
 * **Structured data restored.** The WordPress site carried Rank Math's
   `AccountingService` markup and the rewrite initially dropped it. It is back,
   built from the import - name, address, phone, e-mail and the three profiles in

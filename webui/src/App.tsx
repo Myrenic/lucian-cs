@@ -1,15 +1,12 @@
 import { useEffect } from "react"
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Hero } from "@/components/Hero"
-import { PageHeader } from "@/components/PageHeader"
+import { PageHero } from "@/components/PageHero"
 import { Sections } from "@/components/Section"
 import { SiteFooter } from "@/components/SiteFooter"
 import { SiteHeader } from "@/components/SiteHeader"
 import { crumbsFor, homePage, notFoundPage, pages, pagesByPath, pathByWpId, type Page } from "@/lib/content"
 import { PageMeta } from "@/components/PageMeta"
-import { pageShell } from "@/lib/layout"
-import { cn } from "@/lib/utils"
 
 export default function App() {
   const { pathname } = useLocation()
@@ -47,7 +44,7 @@ function ScrollToTop() {
 function PageView({ page }: { page: Page }) {
   return (
     <>
-      {page.path === "/" ? <Hero /> : <PageHeader page={page} />}
+      <PageHero page={page.path === "/" ? undefined : page} />
       <Sections sections={page.sections} />
     </>
   )
@@ -63,7 +60,7 @@ function NotFound() {
   const crumbs = crumbsFor("/")
   return (
     <section className="bg-background py-20 sm:py-28">
-      <div className={cn(pageShell, "flex justify-center")}>
+      <div className="page flex justify-center">
         <div className="w-full max-w-measure">
           <p className="m-0 text-[0.75rem] font-semibold tracking-[0.14em] text-primary uppercase">
             404
